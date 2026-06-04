@@ -1,0 +1,6 @@
+Income tax analysis should reconcile Form 16, AIS, Form 26AS, bank interest, capital gains, and books of account.
+
+Any automated ITR preparation should remain draft-only until reviewed and approved by a qualified professional.
+
+Depreciation, deductions, TDS credits, and income classification require reference to the applicable assessment year and current law.
+

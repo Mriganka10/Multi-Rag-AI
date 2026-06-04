@@ -1,0 +1,9 @@
+Date Description Debit Credit Balance
+2026-04-01 Opening Balance 0 0 250000
+2026-04-03 Cash Deposit 0 150000 400000
+2026-04-07 Vendor Payment 85000 0 315000
+2026-04-11 Interest Credit 0 3500 318500
+2026-04-15 Loan EMI 45000 0 273500
+2026-04-20 High Value Receipt 0 250000 523500
+2026-04-25 Cash Withdrawal 100000 0 423500
+

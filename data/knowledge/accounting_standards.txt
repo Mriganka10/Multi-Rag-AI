@@ -1,0 +1,6 @@
+Financial statement review should consider revenue recognition, expense classification, related-party transactions, contingent liabilities, and consistency of accounting policies.
+
+Ratio analysis should be read together with business context, industry norms, and prior-period movement.
+
+Common anomaly indicators include unusual margin movement, large round-number transactions, duplicate ledger entries, sudden expense spikes, and inconsistent balances.
+
