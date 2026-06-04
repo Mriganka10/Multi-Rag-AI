@@ -10,6 +10,17 @@ The MVP focuses on three high-value workflows:
 
 The design keeps ITR automation and production-grade government integrations behind explicit human review because tax filing and legal submissions must not be fully autonomous.
 
+## Documentation
+
+- [Project Brief](docs/PROJECT_BRIEF.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Setup Guide](docs/SETUP.md)
+- [API Reference](docs/API.md)
+- [Agent Workflows](docs/AGENTS.md)
+- [Multi-RAG Design](docs/RAG_DESIGN.md)
+- [Security and Compliance](docs/SECURITY_AND_COMPLIANCE.md)
+- [Roadmap](docs/ROADMAP.md)
+
 ## Architecture
 
 ```text
@@ -85,3 +96,4 @@ The system can draft SCN replies, analysis reports, and ITR preparation data. It
 - Phase 4: ITR preparation data model and JSON export.
 - Phase 5: Portal integrations gated by human approval.
 
+See the full [Roadmap](docs/ROADMAP.md) for phased implementation details.
