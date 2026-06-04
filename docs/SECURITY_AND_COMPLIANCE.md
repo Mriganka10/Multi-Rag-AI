@@ -1,0 +1,84 @@
+# Security and Compliance Notes
+
+## Principle
+
+This platform assists Chartered Accountants. It must not replace professional judgment, file returns autonomously, submit replies autonomously, or finalize legal positions without approval.
+
+## Human-in-the-Loop Requirements
+
+Human review is mandatory for:
+
+- SCN replies
+- Assessment responses
+- ITR filing
+- GST return filing
+- Tax position memos
+- Case-law interpretation
+- High-value anomaly conclusions
+- Any communication to a government authority
+
+The API response includes `requires_human_review` for this reason.
+
+## Sensitive Data
+
+The system may process:
+
+- PAN, Aadhaar, GSTIN, CIN, TAN
+- Bank account numbers
+- Salary and income details
+- Tax payments and TDS
+- Invoices and ledgers
+- Client financial statements
+- Government notices
+
+Production systems must treat all uploaded data as confidential.
+
+## Recommended Production Controls
+
+### Authentication and Authorization
+
+- Add user authentication.
+- Add role-based access control.
+- Restrict client data by firm, team, and engagement.
+- Separate admin, CA reviewer, preparer, and read-only roles.
+
+### Data Protection
+
+- Encrypt data at rest.
+- Use TLS in transit.
+- Store secrets in a managed secret vault.
+- Avoid logging document contents or personally identifiable data.
+- Apply retention rules for uploaded documents and generated outputs.
+
+### Audit Trail
+
+Track:
+
+- Who uploaded documents.
+- Which agent processed the task.
+- Which sources were retrieved.
+- What draft was generated.
+- Who reviewed or approved the final output.
+- When an output was exported or submitted.
+
+### Prompt and RAG Safety
+
+- Do not let uploaded documents override system policy.
+- Keep retrieved source citations visible.
+- Separate client-provided text from legal knowledge.
+- Treat generated drafts as drafts, not verified truth.
+- Add explicit uncertainty where data is incomplete.
+
+### Government Portal Integrations
+
+Portal integrations should be added only after:
+
+- Strong authentication is implemented.
+- CA approval workflow is implemented.
+- Submission preview is available.
+- Immutable audit log is available.
+- Rollback and error handling are designed.
+
+## Legal Disclaimer
+
+The POC is for software demonstration and internal review. It is not legal, tax, audit, or accounting advice. All outputs must be reviewed by a qualified professional before use.
