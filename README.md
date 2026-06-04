@@ -12,6 +12,7 @@ The design keeps ITR automation and production-grade government integrations beh
 
 ## Documentation
 
+- [Owner Handoff Guide](docs/OWNER_HANDOFF_GUIDE.md)
 - [Project Brief](docs/PROJECT_BRIEF.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Setup Guide](docs/SETUP.md)
