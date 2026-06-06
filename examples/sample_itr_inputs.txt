@@ -1,0 +1,9 @@
+Form 16 available.
+AIS available.
+26AS available.
+Bank statement available.
+Salary 1200000
+Interest 35000
+Capital Gain 200000
+80C 150000
+TDS 85000
