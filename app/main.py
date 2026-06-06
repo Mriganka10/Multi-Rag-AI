@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.api.routes import router
 from app.core.config import settings
@@ -12,7 +14,35 @@ app = FastAPI(
 app.include_router(router, prefix="/api/v1")
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    errors = exc.errors()
+    has_json_decode_error = any(error.get("type") == "json_invalid" for error in errors)
+    if has_json_decode_error:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": errors,
+                "message": (
+                    "Invalid JSON body. Multiline text must either use escaped newline "
+                    "characters (\\n) inside one string, or be sent as a JSON array of lines."
+                ),
+                "valid_example": {
+                    "query": "Analyze this bank statement",
+                    "text": [
+                        "2026-04-03 Cash Deposit 0 150000 400000",
+                        "2026-04-07 Vendor Payment 85000 0 315000",
+                    ],
+                },
+                "path": str(request.url.path),
+            },
+        )
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "environment": settings.environment}
-
