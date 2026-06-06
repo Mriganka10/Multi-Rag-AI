@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 466 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Date Description Debit Credit Balance) Tj
+T*
+(2026-04-01 Opening Balance 0 0 250000) Tj
+T*
+(2026-04-03 Cash Deposit 0 150000 400000) Tj
+T*
+(2026-04-07 Vendor Payment 85000 0 315000) Tj
+T*
+(2026-04-11 Interest Credit 0 3500 318500) Tj
+T*
+(2026-04-15 Loan EMI 45000 0 273500) Tj
+T*
+(2026-04-20 High Value Receipt 0 250000 523500) Tj
+T*
+(2026-04-25 Cash Withdrawal 100000 0 423500) Tj
+T*
+(2026-04-28 Supplier NEFT 125000 0 298500) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+828
+%%EOF

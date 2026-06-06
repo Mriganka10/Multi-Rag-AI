@@ -1,7 +1,9 @@
 import re
+import csv
 from pathlib import Path
 
 import pandas as pd
+from openpyxl import load_workbook
 from PIL import Image
 from pypdf import PdfReader
 
@@ -14,7 +16,11 @@ class OCRAgent:
         if suffix == ".pdf":
             return self._extract_pdf_text(file_path)
         if suffix in {".txt", ".csv"}:
+            if suffix == ".csv":
+                return self._extract_csv_text(file_path)
             return file_path.read_text(encoding="utf-8", errors="ignore")
+        if suffix in {".xlsx", ".xls"}:
+            return self._extract_xlsx_text(file_path)
         if suffix in {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}:
             return self._extract_image_text(file_path)
         raise ValueError(f"Unsupported file type: {suffix}")
@@ -63,6 +69,32 @@ class OCRAgent:
         reader = PdfReader(str(file_path))
         return "\n".join(page.extract_text() or "" for page in reader.pages)
 
+    def _extract_csv_text(self, file_path: Path) -> str:
+        with file_path.open("r", encoding="utf-8", errors="ignore", newline="") as handle:
+            return "\n".join(" ".join(cell.strip() for cell in row) for row in csv.reader(handle))
+
+    def _extract_xlsx_text(self, file_path: Path) -> str:
+        try:
+            workbook = load_workbook(file_path, read_only=True, data_only=True)
+            lines: list[str] = []
+            for worksheet in workbook.worksheets:
+                for row in worksheet.iter_rows(values_only=True):
+                    values = [self._format_cell_value(value) for value in row if value is not None]
+                    if values:
+                        lines.append(" ".join(values))
+            return "\n".join(lines)
+        except Exception:
+            return self._extract_delimited_text(file_path)
+
+    def _extract_delimited_text(self, file_path: Path) -> str:
+        text = file_path.read_text(encoding="utf-8", errors="ignore")
+        lines = []
+        for line in text.splitlines():
+            values = [value.strip() for value in re.split(r"[\t,]", line) if value.strip()]
+            if values:
+                lines.append(" ".join(values))
+        return "\n".join(lines)
+
     def _extract_image_text(self, file_path: Path) -> str:
         try:
             import pytesseract
@@ -74,3 +106,8 @@ class OCRAgent:
     def _to_float(value: str) -> float:
         return float(value.replace(",", ""))
 
+    @staticmethod
+    def _format_cell_value(value: object) -> str:
+        if isinstance(value, float) and value.is_integer():
+            return str(int(value))
+        return str(value)
