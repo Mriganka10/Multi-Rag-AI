@@ -1,0 +1,9 @@
+Current Assets 500000
+Current Liabilities 250000
+Inventory 100000
+Total Debt 800000
+Equity 300000
+Revenue 1200000
+Net Profit 180000
+Total Assets 1000000
+Total Liabilities 650000
