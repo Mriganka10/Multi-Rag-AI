@@ -23,6 +23,12 @@ class MultiRAG:
 
     def __init__(self, knowledge_dir: Path) -> None:
         self.knowledge_dir = knowledge_dir
+        self.documents: list[KnowledgeDocument] = []
+        self._vectorizer = TfidfVectorizer(stop_words="english")
+        self._matrix = None
+        self.refresh()
+
+    def refresh(self) -> None:
         self.documents = self._load_documents()
         self._vectorizer = TfidfVectorizer(stop_words="english")
         self._matrix = None
@@ -69,15 +75,17 @@ class MultiRAG:
             return []
 
         documents: list[KnowledgeDocument] = []
-        for file_path in sorted(self.knowledge_dir.glob("*.txt")):
+        for file_path in sorted(self.knowledge_dir.rglob("*.txt")):
             text = file_path.read_text(encoding="utf-8").strip()
             if text:
+                collection = file_path.stem
+                if file_path.parent != self.knowledge_dir:
+                    collection = file_path.parent.name
                 documents.append(
                     KnowledgeDocument(
-                        collection=file_path.stem,
+                        collection=collection,
                         source=str(file_path),
                         text=text,
                     )
                 )
         return documents
-

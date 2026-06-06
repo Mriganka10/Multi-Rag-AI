@@ -80,7 +80,10 @@ class RetrievedContext(BaseModel):
 class TaskResult(BaseModel):
     agent: AgentName
     summary: str
+    client_response: str = ""
     data: dict[str, Any] = Field(default_factory=dict)
     contexts: list[RetrievedContext] = Field(default_factory=list)
     artifacts: dict[str, Path | str] = Field(default_factory=dict)
+    llm: dict[str, Any] = Field(default_factory=dict)
+    learned_context_path: str | None = None
     requires_human_review: bool = True

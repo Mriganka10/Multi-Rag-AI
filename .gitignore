@@ -1,5 +1,6 @@
 .env
 .venv/
+.DS_Store
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -7,5 +8,7 @@ __pycache__/
 *.egg-info/
 data/uploads/*
 data/outputs/*
+data/knowledge/learned/*.txt
 !data/uploads/.gitkeep
 !data/outputs/.gitkeep
+!data/knowledge/learned/.gitkeep

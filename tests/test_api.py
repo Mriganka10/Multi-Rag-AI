@@ -45,6 +45,9 @@ def test_analyze_text_accepts_list_of_lines() -> None:
 
     assert response.status_code == 200
     assert payload["agent"] == "bank_statement"
+    assert payload["client_response"]
+    assert payload["llm"]["provider"] == "offline"
+    assert payload["learned_context_path"]
     assert payload["data"]["transaction_count"] == 5
     assert payload["data"]["total_credits"] == 403500
 
@@ -91,6 +94,7 @@ def test_analyze_file_endpoint_with_bank_pdf_sample() -> None:
     assert response.status_code == 200
     assert payload["agent"] == "bank_statement"
     assert payload["data"]["transaction_count"] >= 5
+    assert payload["client_response"]
 
 
 def test_analyze_file_endpoint_with_bank_xlsx_sample() -> None:

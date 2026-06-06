@@ -68,6 +68,28 @@ LLM_PROVIDER=offline
 
 The POC works without OpenAI or Qdrant keys because the initial retriever is offline.
 
+## Optional LLM Mode
+
+The API runs in offline response mode by default:
+
+```text
+LLM_PROVIDER=offline
+```
+
+To use OpenAI for client-readable responses:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-5.4-mini
+```
+
+Install cloud dependencies when using OpenAI mode:
+
+```bash
+python -m pip install -e ".[dev,cloud]"
+```
+
 ## Run API Server
 
 ```bash

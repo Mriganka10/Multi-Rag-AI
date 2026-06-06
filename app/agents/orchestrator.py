@@ -6,7 +6,9 @@ from app.agents.itr_agent import ITRAgent
 from app.agents.ocr_agent import OCRAgent
 from app.agents.scn_agent import SCNAgent
 from app.core.config import settings
+from app.llm.service import LLMService
 from app.models.schemas import AgentDecision, AgentName, TaskResult
+from app.rag.learning import RAGLearningStore
 from app.rag.multi_rag import MultiRAG
 
 
@@ -19,23 +21,76 @@ class AgentOrchestrator:
         self.financial_agent = FinancialAnalysisAgent()
         self.itr_agent = ITRAgent()
         self.rag = rag
+        self.llm = LLMService()
+        self.learning_store = RAGLearningStore(settings.data_dir / "knowledge")
 
     def analyze_text(self, query: str, text: str) -> TaskResult:
         decision = self.decide(query, text)
         result = self._run_decision(decision.agent, query, text)
         result.data["orchestrator_decision"] = decision.model_dump()
-        return result
+        return self._enrich_with_llm(query=query, text=text, result=result)
 
     def analyze_file(self, query: str, file_path: Path) -> TaskResult:
         text = self.ocr_agent.extract_text(file_path)
-        result = self.analyze_text(query=query, text=text)
+        decision = self.decide(query, text)
+        result = self._run_decision(decision.agent, query, text)
+        result.data["orchestrator_decision"] = decision.model_dump()
         rows = self.ocr_agent.parse_transactions(text)
         if rows:
             output_path = settings.data_dir / "outputs" / f"{file_path.stem}.xlsx"
             self.ocr_agent.export_excel(rows, output_path)
             result.artifacts["excel"] = str(output_path)
         result.data["source_file"] = str(file_path)
+        return self._enrich_with_llm(query=query, text=text, result=result)
+
+    def _enrich_with_llm(self, query: str, text: str, result: TaskResult) -> TaskResult:
+        contexts = result.contexts
+        if not contexts:
+            contexts = self._retrieve_context_for_agent(result.agent, query, text)
+            result.contexts = contexts
+
+        generation = self.llm.generate_client_response(
+            query=query,
+            extracted_text=text,
+            result=result,
+            contexts=contexts,
+        )
+        result.client_response = generation.content
+        result.llm = {
+            "provider": generation.provider,
+            "model": generation.model,
+            "used_fallback": generation.used_fallback,
+        }
+
+        if settings.rag_learning_enabled and generation.content:
+            learned_path = self.learning_store.save(
+                query=query,
+                result=result,
+                client_response=generation.content,
+            )
+            result.learned_context_path = str(learned_path)
+            self.rag.refresh()
+
         return result
+
+    def _retrieve_context_for_agent(
+        self,
+        agent_name: AgentName,
+        query: str,
+        text: str,
+    ):
+        collections_by_agent = {
+            AgentName.BANK: ["accounting_standards", "learned"],
+            AgentName.FINANCIAL: ["accounting_standards", "learned"],
+            AgentName.ITR: ["income_tax", "learned"],
+            AgentName.SCN: ["gst", "income_tax", "case_laws", "notifications", "learned"],
+            AgentName.OCR: ["accounting_standards", "learned"],
+        }
+        return self.rag.retrieve(
+            query=f"{query}\n{text}",
+            collections=collections_by_agent.get(agent_name),
+            top_k=3,
+        )
 
     def decide(self, query: str, text: str) -> AgentDecision:
         combined = f"{query}\n{text}".lower()
@@ -62,4 +117,3 @@ class AgentOrchestrator:
         if agent_name == AgentName.BANK:
             return self.bank_agent.run(query, text)
         return self.ocr_agent.run(query, text)
-
