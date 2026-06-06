@@ -44,6 +44,34 @@ Request body:
 }
 ```
 
+For multiline text, use one of these valid JSON formats.
+
+Option 1: escaped newline characters inside one string:
+
+```json
+{
+  "query": "Analyze this bank statement",
+  "text": "2026-04-03 Cash Deposit 0 150000 400000\n2026-04-07 Vendor Payment 85000 0 315000"
+}
+```
+
+Option 2: array of lines. This is easiest in Swagger UI:
+
+```json
+{
+  "query": "Analyze this bank statement",
+  "text": [
+    "2026-04-03 Cash Deposit 0 150000 400000",
+    "2026-04-07 Vendor Payment 85000 0 315000",
+    "2026-04-11 Interest Credit 0 3500 318500",
+    "2026-04-15 Loan EMI 45000 0 273500",
+    "2026-04-20 High Value Receipt 0 250000 523500"
+  ]
+}
+```
+
+Do not paste raw line breaks inside a JSON string. That is invalid JSON and will produce a 422 validation error.
+
 Example:
 
 ```bash
@@ -87,6 +115,26 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
 ```
 
 When transaction rows are detected, the API writes an Excel artifact under `data/outputs` and returns the artifact path.
+
+Other sample file tests:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this GST show cause notice and draft a reply" \
+  -F "file=@examples/sample_scn.txt"
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze financial statement ratios and anomalies" \
+  -F "file=@examples/sample_financial_statement.txt"
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Prepare draft ITR data from these inputs" \
+  -F "file=@examples/sample_itr_inputs.txt"
+```
 
 ## RAG Search
 
