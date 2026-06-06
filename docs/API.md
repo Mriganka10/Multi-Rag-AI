@@ -116,6 +116,26 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
 
 When transaction rows are detected, the API writes an Excel artifact under `data/outputs` and returns the artifact path.
 
+Bank statement upload samples:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this bank statement" \
+  -F "file=@examples/sample_bank_statement.pdf"
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this bank statement" \
+  -F "file=@examples/sample_bank_statement.xlsx"
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this bank statement" \
+  -F "file=@examples/sample_bank_statement.csv"
+```
+
 Other sample file tests:
 
 ```bash

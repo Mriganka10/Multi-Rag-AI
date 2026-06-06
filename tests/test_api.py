@@ -76,3 +76,54 @@ def test_analyze_file_endpoint_with_bank_sample() -> None:
     assert response.status_code == 200
     assert payload["agent"] == "bank_statement"
     assert "excel" in payload["artifacts"]
+
+
+def test_analyze_file_endpoint_with_bank_pdf_sample() -> None:
+    with open("examples/sample_bank_statement.pdf", "rb") as sample_file:
+        response = client.post(
+            "/api/v1/tasks/analyze-file",
+            data={"query": "Analyze this bank statement"},
+            files={"file": ("sample_bank_statement.pdf", sample_file, "application/pdf")},
+        )
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["agent"] == "bank_statement"
+    assert payload["data"]["transaction_count"] >= 5
+
+
+def test_analyze_file_endpoint_with_bank_xlsx_sample() -> None:
+    with open("examples/sample_bank_statement.xlsx", "rb") as sample_file:
+        response = client.post(
+            "/api/v1/tasks/analyze-file",
+            data={"query": "Analyze this bank statement"},
+            files={
+                "file": (
+                    "sample_bank_statement.xlsx",
+                    sample_file,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["agent"] == "bank_statement"
+    assert payload["data"]["transaction_count"] >= 5
+
+
+def test_analyze_file_endpoint_with_bank_csv_sample() -> None:
+    with open("examples/sample_bank_statement.csv", "rb") as sample_file:
+        response = client.post(
+            "/api/v1/tasks/analyze-file",
+            data={"query": "Analyze this bank statement"},
+            files={"file": ("sample_bank_statement.csv", sample_file, "text/csv")},
+        )
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["agent"] == "bank_statement"
+    assert payload["data"]["transaction_count"] >= 5
