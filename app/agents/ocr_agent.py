@@ -19,7 +19,7 @@ class OCRAgent:
             if suffix == ".csv":
                 return self._extract_csv_text(file_path)
             return file_path.read_text(encoding="utf-8", errors="ignore")
-        if suffix == ".xlsx":
+        if suffix in {".xlsx", ".xls"}:
             return self._extract_xlsx_text(file_path)
         if suffix in {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}:
             return self._extract_image_text(file_path)
@@ -74,13 +74,25 @@ class OCRAgent:
             return "\n".join(" ".join(cell.strip() for cell in row) for row in csv.reader(handle))
 
     def _extract_xlsx_text(self, file_path: Path) -> str:
-        workbook = load_workbook(file_path, read_only=True, data_only=True)
-        lines: list[str] = []
-        for worksheet in workbook.worksheets:
-            for row in worksheet.iter_rows(values_only=True):
-                values = [self._format_cell_value(value) for value in row if value is not None]
-                if values:
-                    lines.append(" ".join(values))
+        try:
+            workbook = load_workbook(file_path, read_only=True, data_only=True)
+            lines: list[str] = []
+            for worksheet in workbook.worksheets:
+                for row in worksheet.iter_rows(values_only=True):
+                    values = [self._format_cell_value(value) for value in row if value is not None]
+                    if values:
+                        lines.append(" ".join(values))
+            return "\n".join(lines)
+        except Exception:
+            return self._extract_delimited_text(file_path)
+
+    def _extract_delimited_text(self, file_path: Path) -> str:
+        text = file_path.read_text(encoding="utf-8", errors="ignore")
+        lines = []
+        for line in text.splitlines():
+            values = [value.strip() for value in re.split(r"[\t,]", line) if value.strip()]
+            if values:
+                lines.append(" ".join(values))
         return "\n".join(lines)
 
     def _extract_image_text(self, file_path: Path) -> str:

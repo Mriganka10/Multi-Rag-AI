@@ -133,6 +133,12 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
   -F "query=Analyze this bank statement" \
+  -F "file=@examples/sample_bank_statement.xls"
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this bank statement" \
   -F "file=@examples/sample_bank_statement.csv"
 ```
 
