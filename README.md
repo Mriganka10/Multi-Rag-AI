@@ -19,6 +19,7 @@ The design keeps ITR automation and production-grade government integrations beh
 - [API Reference](docs/API.md)
 - [Agent Workflows](docs/AGENTS.md)
 - [Multi-RAG Design](docs/RAG_DESIGN.md)
+- [LLM Responses and RAG Learning](docs/LLM_AND_LEARNING.md)
 - [Security and Compliance](docs/SECURITY_AND_COMPLIANCE.md)
 - [Roadmap](docs/ROADMAP.md)
 
