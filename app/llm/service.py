@@ -12,6 +12,10 @@ class LLMGeneration:
     used_fallback: bool = False
 
 
+class LLMProviderError(RuntimeError):
+    pass
+
+
 class LLMService:
     def generate_client_response(
         self,
@@ -22,21 +26,12 @@ class LLMService:
         contexts: list[RetrievedContext],
     ) -> LLMGeneration:
         if settings.llm_provider.lower() == "openai":
-            try:
-                return self._generate_with_openai(
-                    query=query,
-                    extracted_text=extracted_text,
-                    result=result,
-                    contexts=contexts,
-                )
-            except Exception:
-                fallback = self._generate_offline(result=result, contexts=contexts)
-                return LLMGeneration(
-                    content=fallback.content,
-                    provider="offline",
-                    model="deterministic-template",
-                    used_fallback=True,
-                )
+            return self._generate_with_openai(
+                query=query,
+                extracted_text=extracted_text,
+                result=result,
+                contexts=contexts,
+            )
         return self._generate_offline(result=result, contexts=contexts)
 
     def _generate_with_openai(
@@ -48,39 +43,42 @@ class LLMService:
         contexts: list[RetrievedContext],
     ) -> LLMGeneration:
         if not settings.openai_api_key:
-            raise RuntimeError("OPENAI_API_KEY is required when LLM_PROVIDER=openai")
+            raise LLMProviderError("OPENAI_API_KEY is required when LLM_PROVIDER=openai")
 
         try:
             from openai import OpenAI
         except ImportError as exc:
-            raise RuntimeError("Install cloud dependencies with: pip install -e '.[dev,cloud]'") from exc
+            raise LLMProviderError("Install cloud dependencies with: pip install -e '.[dev,cloud]'") from exc
 
         client = OpenAI(api_key=settings.openai_api_key)
-        response = client.responses.create(
-            model=settings.openai_model,
-            input=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert AI assistant for Chartered Accountants. "
-                        "Give clear, professional, client-readable analysis in plain text. "
-                        "Use concise headings, spacing, and bullets where useful. "
-                        "Never return JSON, raw dictionaries, or developer payloads to the client. "
-                        "Do not claim that a tax filing, notice response, or legal position is final. "
-                        "Mention that CA review is required where relevant."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": self._build_prompt(
-                        query=query,
-                        extracted_text=extracted_text,
-                        result=result,
-                        contexts=contexts,
-                    ),
-                },
-            ],
-        )
+        try:
+            response = client.responses.create(
+                model=settings.openai_model,
+                input=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an expert AI assistant for Chartered Accountants. "
+                            "Give clear, professional, client-readable analysis in plain text. "
+                            "Use concise headings, spacing, and bullets where useful. "
+                            "Never return JSON, raw dictionaries, or developer payloads to the client. "
+                            "Do not claim that a tax filing, notice response, or legal position is final. "
+                            "Mention that CA review is required where relevant."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": self._build_prompt(
+                            query=query,
+                            extracted_text=extracted_text,
+                            result=result,
+                            contexts=contexts,
+                        ),
+                    },
+                ],
+            )
+        except Exception as exc:
+            raise LLMProviderError(f"OpenAI request failed: {exc}") from exc
         return LLMGeneration(
             content=response.output_text,
             provider="openai",
