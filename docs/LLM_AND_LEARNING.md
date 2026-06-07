@@ -13,7 +13,7 @@ User Prompt / Uploaded File
 Agent Orchestrator
         |
         v
-Specialist Agent JSON Analysis
+Specialist Agent Internal Analysis
         |
         v
 Relevant RAG Context Retrieval
@@ -22,7 +22,7 @@ Relevant RAG Context Retrieval
 LLM / Offline Response Builder
         |
         v
-Client-readable response + developer JSON
+Client-readable plain text response
         |
         v
 Learned response stored under data/knowledge/learned
@@ -30,25 +30,17 @@ Learned response stored under data/knowledge/learned
 
 ## Response Modes
 
-### Offline Mode
+### OpenAI Mode
 
 Default mode:
 
 ```text
-LLM_PROVIDER=offline
-```
-
-This does not call any external LLM. It creates a deterministic human-readable response from the structured agent output. Use this mode for local testing and demos without API keys.
-
-### OpenAI Mode
-
-OpenAI mode:
-
-```text
 LLM_PROVIDER=openai
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_MODEL=gpt-4.1-mini
 ```
+
+This calls OpenAI for the final client-readable response for both text prompts and file uploads.
 
 Install cloud dependencies:
 
@@ -62,38 +54,65 @@ Then restart the API:
 python -m uvicorn app.main:app --reload
 ```
 
+### Offline Fallback
+
+If `LLM_PROVIDER=offline`, or if OpenAI mode is configured without a key during local development,
+the app uses a deterministic plain-text response builder. This keeps local tests and demos runnable,
+but production should provide `OPENAI_API_KEY`.
+
+Offline mode:
+
+```text
+LLM_PROVIDER=offline
+```
+
 ## API Response Shape
 
-The API still returns structured JSON for developers, but now also includes a client-readable response.
+The analysis APIs return human-readable plain text, not the internal JSON result.
 
-Important fields:
+Example response:
 
-```json
-{
-  "agent": "bank_statement",
-  "summary": "Analyzed 8 transactions...",
-  "client_response": "Analysis completed using the bank statement agent...",
-  "data": {},
-  "contexts": [],
-  "llm": {
-    "provider": "offline",
-    "model": "deterministic-template",
-    "used_fallback": false
-  },
-  "learned_context_path": "data/knowledge/learned/bank_statement_20260606050000.txt",
-  "requires_human_review": true
-}
+```text
+Analysis Report
+
+Summary
+The uploaded bank statement has been reviewed for transaction movement and risk indicators.
+
+Key Observations
+- Cash deposits and high-value receipts need review.
+- Interest credits may need reconciliation with reported income.
+
+Recommended Next Steps
+- Reconcile high-value credits with invoices or supporting documents.
+- Review the output with a qualified CA before filing or responding.
 ```
+
+The internal `TaskResult` object remains inside the Python application for routing, artifacts,
+RAG context, audit logging, and tests.
 
 ## RAG Learning
 
-When `RAG_LEARNING_ENABLED=true`, generated client responses are stored under:
+Learning is opt-in and approval-gated.
+
+Request controls:
+
+- `tenant_id`: scopes learned notes to a client or engagement.
+- `learning_consent`: saves a learning note only when true.
+- `approve_learning`: makes that note retrievable only when true.
+
+Pending notes:
 
 ```text
-data/knowledge/learned
+data/knowledge/learned/{tenant_id}/pending
 ```
 
-The retriever is refreshed after each learned response, so future requests can retrieve prior learned context.
+Approved notes:
+
+```text
+data/knowledge/learned/{tenant_id}/approved
+```
+
+Only approved notes are loaded back into the retriever.
 
 For production, this must be controlled carefully because client documents and generated outputs may contain confidential information.
 
@@ -104,6 +123,12 @@ Recommended production controls:
 - Add CA approval before learned content becomes reusable knowledge.
 - Keep audit logs for what was learned and who approved it.
 - Avoid storing sensitive personal data unless strictly required.
+
+The POC writes audit events to:
+
+```text
+data/knowledge/learning_audit.jsonl
+```
 
 ## How To Test
 
@@ -126,16 +151,20 @@ Body:
     "2026-04-11 Interest Credit 0 3500 318500",
     "2026-04-15 Loan EMI 45000 0 273500",
     "2026-04-20 High Value Receipt 0 250000 523500"
-  ]
+  ],
+  "tenant_id": "demo-client",
+  "learning_consent": true,
+  "approve_learning": false
 }
 ```
 
 Expected:
 
-- `agent` should be `bank_statement`.
-- `client_response` should contain a human-readable explanation.
-- `llm.provider` should be `offline` unless OpenAI mode is enabled.
-- `learned_context_path` should be populated if RAG learning is enabled.
+- Response content type should be `text/plain`.
+- Response should contain a human-readable analysis with headings and spacing.
+- With OpenAI configured, the final response should come from the configured OpenAI model.
+- With `approve_learning=false`, learned content is saved as pending and is not retrieved later.
+- With `approve_learning=true`, learned content becomes retrievable for the same `tenant_id`.
 
 ### Analyze File
 
@@ -163,7 +192,6 @@ examples/sample_bank_statement.txt
 
 Expected:
 
-- `agent` should be `bank_statement`.
-- `client_response` should be populated.
-- `artifacts.excel` should be populated when transaction rows are detected.
-
+- Response content type should be `text/plain`.
+- Response should contain a human-readable analysis.
+- Excel artifacts are still generated internally under `data/outputs` when transaction rows are detected.

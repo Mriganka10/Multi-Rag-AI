@@ -76,11 +76,11 @@ class MultiRAG:
 
         documents: list[KnowledgeDocument] = []
         for file_path in sorted(self.knowledge_dir.rglob("*.txt")):
+            if "learned" in file_path.parts and "approved" not in file_path.parts:
+                continue
             text = file_path.read_text(encoding="utf-8").strip()
             if text:
-                collection = file_path.stem
-                if file_path.parent != self.knowledge_dir:
-                    collection = file_path.parent.name
+                collection = self._collection_for(file_path)
                 documents.append(
                     KnowledgeDocument(
                         collection=collection,
@@ -89,3 +89,11 @@ class MultiRAG:
                     )
                 )
         return documents
+
+    def _collection_for(self, file_path: Path) -> str:
+        relative_parts = file_path.relative_to(self.knowledge_dir).parts
+        if relative_parts and relative_parts[0] == "learned" and len(relative_parts) >= 3:
+            return f"learned_{relative_parts[1]}"
+        if file_path.parent != self.knowledge_dir:
+            return file_path.parent.name
+        return file_path.stem

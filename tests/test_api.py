@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from uuid import uuid4
 
 from app.main import app
 
@@ -23,7 +24,9 @@ def test_analyze_text_endpoint() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["agent"] == "bank_statement"
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_analyze_text_accepts_list_of_lines() -> None:
@@ -41,15 +44,11 @@ def test_analyze_text_accepts_list_of_lines() -> None:
         },
     )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert payload["client_response"]
-    assert payload["llm"]["provider"] == "offline"
-    assert payload["learned_context_path"]
-    assert payload["data"]["transaction_count"] == 5
-    assert payload["data"]["total_credits"] == 403500
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "Analysis Report" in response.text
+    assert "Key Observations" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_invalid_multiline_json_returns_helpful_message() -> None:
@@ -74,11 +73,9 @@ def test_analyze_file_endpoint_with_bank_sample() -> None:
             files={"file": ("sample_bank_statement.txt", sample_file, "text/plain")},
         )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert "excel" in payload["artifacts"]
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_analyze_file_endpoint_with_bank_pdf_sample() -> None:
@@ -89,12 +86,9 @@ def test_analyze_file_endpoint_with_bank_pdf_sample() -> None:
             files={"file": ("sample_bank_statement.pdf", sample_file, "application/pdf")},
         )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert payload["data"]["transaction_count"] >= 5
-    assert payload["client_response"]
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_analyze_file_endpoint_with_bank_xlsx_sample() -> None:
@@ -111,11 +105,9 @@ def test_analyze_file_endpoint_with_bank_xlsx_sample() -> None:
             },
         )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert payload["data"]["transaction_count"] >= 5
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_analyze_file_endpoint_with_bank_xls_sample() -> None:
@@ -126,11 +118,9 @@ def test_analyze_file_endpoint_with_bank_xls_sample() -> None:
             files={"file": ("sample_bank_statement.xls", sample_file, "application/vnd.ms-excel")},
         )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert payload["data"]["transaction_count"] >= 5
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
 
 
 def test_analyze_file_endpoint_with_bank_csv_sample() -> None:
@@ -141,8 +131,47 @@ def test_analyze_file_endpoint_with_bank_csv_sample() -> None:
             files={"file": ("sample_bank_statement.csv", sample_file, "text/csv")},
         )
 
-    payload = response.json()
-
     assert response.status_code == 200
-    assert payload["agent"] == "bank_statement"
-    assert payload["data"]["transaction_count"] >= 5
+    assert "Analysis Report" in response.text
+    assert "bank_statement" in response.text
+
+
+def test_learning_requires_consent_and_ca_approval() -> None:
+    from app.agents.orchestrator import AgentOrchestrator
+    from app.models.schemas import LearningOptions
+
+    tenant_id = f"tenant-{uuid4().hex}"
+    orchestrator = AgentOrchestrator()
+    result = orchestrator.analyze_text(
+        query="Analyze this bank statement",
+        text="2026-04-03 Cash Deposit 0 150000 400000",
+        learning_options=LearningOptions(
+            tenant_id=tenant_id,
+            learning_consent=True,
+            approve_learning=False,
+        ),
+    )
+
+    assert result.learned_context_path
+    assert "/pending/" in result.learned_context_path
+    assert not orchestrator.rag.retrieve(
+        query="Cash Deposit",
+        collections=[f"learned_{tenant_id}"],
+    )
+
+    approved = orchestrator.analyze_text(
+        query="Analyze this bank statement",
+        text="2026-04-03 Cash Deposit 0 150000 400000",
+        learning_options=LearningOptions(
+            tenant_id=tenant_id,
+            learning_consent=True,
+            approve_learning=True,
+        ),
+    )
+
+    assert approved.learned_context_path
+    assert "/approved/" in approved.learned_context_path
+    assert orchestrator.rag.retrieve(
+        query="Cash Deposit",
+        collections=[f"learned_{tenant_id}"],
+    )
