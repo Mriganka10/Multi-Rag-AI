@@ -28,9 +28,12 @@ A draft-only ITR helper is included as an early workflow placeholder. Actual fil
 - Upload or paste document content through the API.
 - Automatically route the query to the correct specialist agent.
 - Retrieve relevant legal/accounting context from the applicable knowledge base.
-- Produce structured JSON output suitable for a UI or downstream workflow.
+- Produce client-readable plain text responses using the configured OpenAI model.
+- Preserve structured internal analysis for routing, RAG, artifacts, audit, and future UI workflows.
 - Keep all high-risk outputs marked for CA review.
 
 ## Current Status
 
-The repository contains a working FastAPI POC with deterministic local agents and an offline TF-IDF multi-RAG layer. It is designed so production services such as Qdrant, OpenAI embeddings, cloud OCR, and human approval workflows can be added without rewriting the entire application.
+The repository contains a working FastAPI POC with deterministic local agents, an offline TF-IDF multi-RAG layer, and an OpenAI final response layer. Specialist agents perform the domain analysis first; OpenAI then converts the internal result and RAG context into a human-readable client response.
+
+The current OpenAI model is configured through `OPENAI_MODEL` and defaults to `gpt-4.1-mini`. The model is shared across all agents for final response generation.
