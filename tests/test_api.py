@@ -1,5 +1,6 @@
-from fastapi.testclient import TestClient
 from uuid import uuid4
+
+from fastapi.testclient import TestClient
 
 from app.main import app
 
@@ -25,6 +26,8 @@ def test_analyze_text_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
+    assert response.headers["x-llm-provider"] == "offline"
+    assert response.headers["x-llm-fallback"] == "false"
     assert "Analysis Report" in response.text
     assert "bank_statement" in response.text
 
