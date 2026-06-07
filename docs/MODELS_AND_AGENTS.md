@@ -53,6 +53,30 @@ This model is used for all final client-facing responses:
 
 If `LLM_PROVIDER=openai`, the app must call OpenAI. It does not silently fall back to the offline template. A failed OpenAI request returns `502 LLM provider error`.
 
+## Agent Analysis vs OpenAI Response
+
+The specialist agent and the OpenAI model have different responsibilities.
+
+The specialist agent performs domain analysis first. It uses Python code, rules, parsers, calculations, regular expressions, and local retrieval. This creates a controlled internal result.
+
+OpenAI runs after that. It receives the internal result, relevant RAG context, the selected agent name, the user query, and a source excerpt. Its job is to convert those inputs into a professional human-readable response.
+
+This means the system is not:
+
+```text
+User -> OpenAI directly
+```
+
+The intended flow is:
+
+```text
+User -> Orchestrator -> Specialist Agent -> RAG -> OpenAI -> Final Response
+```
+
+For example, an SCN request first goes to the SCN agent. The SCN agent detects the section, amount, allegation, and draft response points. RAG then retrieves relevant GST or tax context. OpenAI then writes the final readable answer.
+
+For a bank statement upload, the file is extracted first. The orchestrator routes it to the bank statement agent. The bank statement agent calculates credits, debits, cash transactions, interest entries, EMI entries, and high-value items. OpenAI then writes the final commentary.
+
 ## Agent-by-Agent Map
 
 | Agent | File | Current model or technique | OpenAI usage |
