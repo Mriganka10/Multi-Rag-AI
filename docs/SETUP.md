@@ -63,10 +63,62 @@ OPENAI_API_KEY=
 QDRANT_URL=
 QDRANT_API_KEY=
 OCR_PROVIDER=local
+LLM_PROVIDER=openai
+OPENAI_MODEL=gpt-4.1-mini
+RAG_LEARNING_ENABLED=true
+RAG_LEARNING_DEFAULT_CONSENT=false
+```
+
+The analysis APIs are configured for OpenAI by default. During local development, if no
+`OPENAI_API_KEY` is provided, the service falls back to the offline plain-text response builder.
+For production demos, provide an OpenAI API key.
+
+Do not commit `.env`. Keep the API key only on the local machine or in a production secret manager.
+
+## OpenAI LLM Mode
+
+Use OpenAI for client-readable responses:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+Install cloud dependencies:
+
+```bash
+python -m pip install -e ".[dev,cloud]"
+```
+
+When OpenAI mode is active, successful responses include:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
+
+If the app cannot call OpenAI, the endpoint returns `502 LLM provider error`.
+
+## Local Offline Mode
+
+For local testing without an API key:
+
+```text
 LLM_PROVIDER=offline
 ```
 
-The POC works without OpenAI or Qdrant keys because the initial retriever is offline.
+## RAG Learning Controls
+
+The API supports controlled RAG learning:
+
+```text
+RAG_LEARNING_ENABLED=true
+RAG_LEARNING_DEFAULT_CONSENT=false
+```
+
+Keep default consent as `false` in production. Send request-level consent and approval only when the client or engagement allows it.
 
 ## Run API Server
 

@@ -17,7 +17,7 @@ Human review is mandatory for:
 - High-value anomaly conclusions
 - Any communication to a government authority
 
-The API response includes `requires_human_review` for this reason.
+The internal task result includes `requires_human_review` for this reason. The public analysis API returns human-readable text, so the response wording must continue to include CA review caveats.
 
 ## Sensitive Data
 
@@ -47,6 +47,7 @@ Production systems must treat all uploaded data as confidential.
 - Encrypt data at rest.
 - Use TLS in transit.
 - Store secrets in a managed secret vault.
+- Never commit `.env` files or API keys to Git.
 - Avoid logging document contents or personally identifiable data.
 - Apply retention rules for uploaded documents and generated outputs.
 
@@ -68,6 +69,8 @@ Track:
 - Separate client-provided text from legal knowledge.
 - Treat generated drafts as drafts, not verified truth.
 - Add explicit uncertainty where data is incomplete.
+- Keep learned RAG content opt-in per tenant or engagement.
+- Load only CA-approved learned content into retrieval.
 
 ### Government Portal Integrations
 

@@ -14,6 +14,8 @@ Deliverables:
 - Financial statement analysis.
 - Draft-only ITR helper.
 - Offline Multi-RAG retriever.
+- OpenAI final response layer for client-readable reports.
+- Tenant-scoped RAG learning with pending and approved learned notes.
 - Seed knowledge files.
 - Tests and linter setup.
 
@@ -52,10 +54,19 @@ Deliverables:
 
 ## Phase 4: LLM Drafting and Review Workflow
 
+Status: Partially complete.
+
+Current branch includes:
+
+- OpenAI provider integration through `LLM_PROVIDER=openai`.
+- Shared configurable response model through `OPENAI_MODEL`, currently `gpt-4.1-mini`.
+- Human-readable `text/plain` analysis responses.
+- Provider/model response headers.
+- Controlled RAG learning with consent and approval gates.
+
 Goals:
 
-- Add LLM-based drafting.
-- Add prompt templates by workflow.
+- Add richer prompt templates by workflow.
 - Add reviewer approval status.
 - Add versioned draft history.
 
@@ -120,3 +131,4 @@ Goals:
 4. Add document ingestion command.
 5. Add richer sample documents.
 6. Add frontend upload UI.
+7. Add authentication and tenant workspace APIs.

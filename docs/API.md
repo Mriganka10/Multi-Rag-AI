@@ -40,7 +40,10 @@ Request body:
 ```json
 {
   "query": "Analyze this GST show cause notice",
-  "text": "Show Cause Notice under section 73..."
+  "text": "Show Cause Notice under section 73...",
+  "tenant_id": "demo-client",
+  "learning_consent": true,
+  "approve_learning": false
 }
 ```
 
@@ -66,7 +69,10 @@ Option 2: array of lines. This is easiest in Swagger UI:
     "2026-04-11 Interest Credit 0 3500 318500",
     "2026-04-15 Loan EMI 45000 0 273500",
     "2026-04-20 High Value Receipt 0 250000 523500"
-  ]
+  ],
+  "tenant_id": "demo-client",
+  "learning_consent": true,
+  "approve_learning": false
 }
 ```
 
@@ -80,18 +86,33 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-text \
   -d '{"query":"Analyze this GST show cause notice","text":"Show Cause Notice under section 73. It is alleged that input tax credit of INR 250000 was wrongly availed."}'
 ```
 
-Response shape:
+Response:
 
-```json
-{
-  "agent": "scn",
-  "summary": "SCN reviewed and draft response prepared for CA review.",
-  "data": {},
-  "contexts": [],
-  "artifacts": {},
-  "requires_human_review": true
-}
+```text
+Analysis Report
+
+Summary
+...
+
+Key Observations
+- ...
+
+Recommended Next Steps
+- ...
+
+Review Caveat
+Please review this output with a qualified CA before taking action.
 ```
+
+Response headers:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
+
+These headers confirm whether the final response came from OpenAI or from offline local mode.
 
 ## Analyze File
 
@@ -105,16 +126,31 @@ Form fields:
 
 - `query`: user instruction
 - `file`: uploaded file
+- `tenant_id`: client or engagement identifier for tenant-scoped RAG learning
+- `learning_consent`: `true` only when the client/engagement opted into learning
+- `approve_learning`: `true` only after CA approval; approved notes become retrievable RAG context
 
 Example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
   -F "query=Convert this bank statement to Excel and analyze it" \
+  -F "tenant_id=demo-client" \
+  -F "learning_consent=true" \
+  -F "approve_learning=false" \
   -F "file=@examples/sample_bank_statement.txt"
 ```
 
-When transaction rows are detected, the API writes an Excel artifact under `data/outputs` and returns the artifact path.
+When transaction rows are detected, the API still writes an Excel artifact under `data/outputs`.
+The API response itself is now plain human-readable text for the client-facing POC.
+
+The response headers still identify the final response provider and model:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
 
 Bank statement upload samples:
 
@@ -189,37 +225,27 @@ Response:
 }
 ```
 
-## Response Fields
+## Client Response Contract
 
-### `agent`
+The analysis endpoints return `text/plain`, not the internal developer JSON envelope.
 
-The specialist agent selected by the orchestrator.
+The internal structured result is still used by the orchestrator for agent routing, RAG context retrieval,
+artifact creation, audit logs, and learning controls.
 
-Possible values:
+If `LLM_PROVIDER=openai`, OpenAI must be called. The app no longer silently falls back to the offline response builder. If the OpenAI package, API key, quota, or request fails, the endpoint returns:
 
-- `ocr`
-- `bank_statement`
-- `scn`
-- `financial`
-- `itr`
-- `general`
+```text
+502 LLM provider error
+```
 
-### `summary`
+## RAG Learning Controls
 
-Short human-readable result summary.
+Learning is controlled by three request fields:
 
-### `data`
+- `tenant_id`: keeps learned knowledge scoped to one client or engagement.
+- `learning_consent`: must be `true` before anything is saved for learning.
+- `approve_learning`: must be `true` before the saved note becomes retrievable RAG context.
 
-Structured agent-specific result payload.
+If `learning_consent=true` and `approve_learning=false`, the note is stored under a pending folder and audit logged, but future RAG retrieval will not use it.
 
-### `contexts`
-
-Retrieved RAG context used by the agent.
-
-### `artifacts`
-
-Generated files, such as Excel output paths.
-
-### `requires_human_review`
-
-Boolean flag. High-risk CA workflows should remain `true` until a qualified professional approves the output.
+If both are `true`, the note is stored under the tenant's approved folder and can be retrieved in future prompts for that same tenant.

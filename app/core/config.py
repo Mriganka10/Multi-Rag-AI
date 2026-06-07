@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     environment: str = "local"
     data_dir: Path = Path("data")
     ocr_provider: str = "local"
-    llm_provider: str = "offline"
+    llm_provider: str = "openai"
+    openai_model: str = "gpt-4.1-mini"
+    rag_learning_enabled: bool = True
+    rag_learning_default_consent: bool = False
     openai_api_key: str | None = None
     qdrant_url: str | None = None
     qdrant_api_key: str | None = None
@@ -23,4 +26,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-
