@@ -104,6 +104,16 @@ Review Caveat
 Please review this output with a qualified CA before taking action.
 ```
 
+Response headers:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
+
+These headers confirm whether the final response came from OpenAI or from offline local mode.
+
 ## Analyze File
 
 ```http
@@ -133,6 +143,14 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
 
 When transaction rows are detected, the API still writes an Excel artifact under `data/outputs`.
 The API response itself is now plain human-readable text for the client-facing POC.
+
+The response headers still identify the final response provider and model:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
 
 Bank statement upload samples:
 
@@ -213,6 +231,12 @@ The analysis endpoints return `text/plain`, not the internal developer JSON enve
 
 The internal structured result is still used by the orchestrator for agent routing, RAG context retrieval,
 artifact creation, audit logs, and learning controls.
+
+If `LLM_PROVIDER=openai`, OpenAI must be called. The app no longer silently falls back to the offline response builder. If the OpenAI package, API key, quota, or request fails, the endpoint returns:
+
+```text
+502 LLM provider error
+```
 
 ## RAG Learning Controls
 
