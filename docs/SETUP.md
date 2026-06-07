@@ -73,6 +73,8 @@ The analysis APIs are configured for OpenAI by default. During local development
 `OPENAI_API_KEY` is provided, the service falls back to the offline plain-text response builder.
 For production demos, provide an OpenAI API key.
 
+Do not commit `.env`. Keep the API key only on the local machine or in a production secret manager.
+
 ## OpenAI LLM Mode
 
 Use OpenAI for client-readable responses:
@@ -88,6 +90,16 @@ Install cloud dependencies:
 ```bash
 python -m pip install -e ".[dev,cloud]"
 ```
+
+When OpenAI mode is active, successful responses include:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
+
+If the app cannot call OpenAI, the endpoint returns `502 LLM provider error`.
 
 ## Local Offline Mode
 
