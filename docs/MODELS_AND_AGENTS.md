@@ -142,4 +142,3 @@ then the API is running in offline mode and is not using OpenAI.
 | LLM response | Shared `gpt-4.1-mini` | Configurable model policy per workflow and cost tier. |
 | Learning | Tenant-scoped pending/approved files | Database-backed approval workflow with audit trail. |
 | Security | Local `.env` | Secret manager, auth, role-based tenant access, encrypted storage. |
-
