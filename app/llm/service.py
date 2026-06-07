@@ -29,14 +29,10 @@ class LLMService:
                     result=result,
                     contexts=contexts,
                 )
-            except Exception as exc:
+            except Exception:
                 fallback = self._generate_offline(result=result, contexts=contexts)
                 return LLMGeneration(
-                    content=(
-                        f"{fallback.content}\n\n"
-                        "LLM provider note: OpenAI generation failed, so the offline response "
-                        f"builder was used. Error: {exc}"
-                    ),
+                    content=fallback.content,
                     provider="offline",
                     model="deterministic-template",
                     used_fallback=True,
@@ -67,7 +63,9 @@ class LLMService:
                     "role": "system",
                     "content": (
                         "You are an expert AI assistant for Chartered Accountants. "
-                        "Give clear, professional, client-readable analysis. "
+                        "Give clear, professional, client-readable analysis in plain text. "
+                        "Use concise headings, spacing, and bullets where useful. "
+                        "Never return JSON, raw dictionaries, or developer payloads to the client. "
                         "Do not claim that a tax filing, notice response, or legal position is final. "
                         "Mention that CA review is required where relevant."
                     ),
@@ -106,8 +104,9 @@ class LLMService:
             f"Structured agent result:\n{result.model_dump_json(indent=2)}\n\n"
             f"Retrieved RAG context:\n{context_text or 'No retrieved context.'}\n\n"
             f"Extracted source text excerpt:\n{extracted_text[:3000]}\n\n"
-            "Write a polished client-facing response with: summary, key observations, "
-            "recommended next steps, and review caveats. Keep it concise but useful."
+            "Write a polished client-facing response with clear spacing and indentation. "
+            "Include: summary, key observations, recommended next steps, and review caveats. "
+            "Return plain human-readable text only. Do not return JSON."
         )
 
     def _generate_offline(
@@ -121,19 +120,21 @@ class LLMService:
             observations = [observations]
 
         lines = [
-            f"Analysis completed using the {result.agent.value} agent.",
+            "Analysis Report",
+            "",
+            f"Agent Used: {result.agent.value}",
             "",
             result.summary,
         ]
 
         if observations:
             lines.append("")
-            lines.append("Key observations:")
+            lines.append("Key Observations")
             lines.extend(f"- {item}" for item in observations)
 
         if result.agent.value == "scn" and result.data.get("draft_reply"):
             lines.append("")
-            lines.append("Draft response prepared:")
+            lines.append("Draft Response Prepared")
             lines.append(result.data["draft_reply"])
 
         if result.agent.value == "bank_statement":
@@ -153,6 +154,7 @@ class LLMService:
 
         if result.requires_human_review:
             lines.append("")
+            lines.append("Review Caveat")
             lines.append("Please review this output with a qualified CA before taking action.")
 
         return LLMGeneration(
@@ -160,4 +162,3 @@ class LLMService:
             provider="offline",
             model="deterministic-template",
         )
-

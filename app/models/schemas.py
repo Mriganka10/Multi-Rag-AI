@@ -32,6 +32,20 @@ class TextAnalysisRequest(BaseModel):
         ],
         description="Document text as one string, or as a list of lines for easier JSON entry.",
     )
+    tenant_id: str = Field(
+        default="default",
+        min_length=1,
+        max_length=64,
+        description="Client or engagement identifier used to scope learned RAG notes.",
+    )
+    learning_consent: bool = Field(
+        default=False,
+        description="Set true only when the client/engagement has opted into RAG learning.",
+    )
+    approve_learning: bool = Field(
+        default=False,
+        description="Set true only after CA approval. Approved notes become retrievable RAG context.",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -45,6 +59,9 @@ class TextAnalysisRequest(BaseModel):
                         "2026-04-15 Loan EMI 45000 0 273500",
                         "2026-04-20 High Value Receipt 0 250000 523500",
                     ],
+                    "tenant_id": "demo-client",
+                    "learning_consent": True,
+                    "approve_learning": False,
                 },
                 {
                     "query": "Analyze this GST show cause notice and draft a reply",
@@ -63,6 +80,24 @@ class TextAnalysisRequest(BaseModel):
         if isinstance(value, list):
             return "\n".join(str(line) for line in value)
         return value
+
+    @field_validator("tenant_id")
+    @classmethod
+    def normalize_tenant_id(cls, value: str) -> str:
+        normalized = "".join(char if char.isalnum() or char in {"-", "_"} else "-" for char in value)
+        return normalized.strip("-") or "default"
+
+
+class LearningOptions(BaseModel):
+    tenant_id: str = "default"
+    learning_consent: bool = False
+    approve_learning: bool = False
+
+    @field_validator("tenant_id")
+    @classmethod
+    def normalize_tenant_id(cls, value: str) -> str:
+        normalized = "".join(char if char.isalnum() or char in {"-", "_"} else "-" for char in value)
+        return normalized.strip("-") or "default"
 
 
 class AgentDecision(BaseModel):

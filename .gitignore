@@ -8,7 +8,8 @@ __pycache__/
 *.egg-info/
 data/uploads/*
 data/outputs/*
-data/knowledge/learned/*.txt
+data/knowledge/learned/**/*.txt
+data/knowledge/learning_audit.jsonl
 !data/uploads/.gitkeep
 !data/outputs/.gitkeep
 !data/knowledge/learned/.gitkeep
