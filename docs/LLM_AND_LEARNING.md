@@ -42,6 +42,12 @@ OPENAI_MODEL=gpt-4.1-mini
 
 This calls OpenAI for the final client-readable response for both text prompts and file uploads.
 
+The current configured model is shared by all agents. The default is:
+
+```text
+OPENAI_MODEL=gpt-4.1-mini
+```
+
 Install cloud dependencies:
 
 ```bash
@@ -56,9 +62,9 @@ python -m uvicorn app.main:app --reload
 
 ### Offline Fallback
 
-If `LLM_PROVIDER=offline`, or if OpenAI mode is configured without a key during local development,
-the app uses a deterministic plain-text response builder. This keeps local tests and demos runnable,
-but production should provide `OPENAI_API_KEY`.
+If `LLM_PROVIDER=offline`, the app uses a deterministic plain-text response builder. This keeps local tests and demos runnable, but production should provide `OPENAI_API_KEY`.
+
+If `LLM_PROVIDER=openai`, the app must call OpenAI. It does not silently fall back to offline mode. OpenAI package, API key, quota, or request failures return `502 LLM provider error`.
 
 Offline mode:
 
@@ -89,6 +95,14 @@ Recommended Next Steps
 
 The internal `TaskResult` object remains inside the Python application for routing, artifacts,
 RAG context, audit logging, and tests.
+
+Use response headers to confirm the model:
+
+```text
+X-LLM-Provider: openai
+X-LLM-Model: gpt-4.1-mini
+X-LLM-Fallback: false
+```
 
 ## RAG Learning
 

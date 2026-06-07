@@ -12,8 +12,9 @@ The system can:
 2. Route the query to the correct specialist agent.
 3. Process text or uploaded documents.
 4. Retrieve relevant tax/accounting context.
-5. Generate structured analysis or draft responses.
-6. Keep high-risk outputs marked for CA review.
+5. Generate internal structured analysis.
+6. Use OpenAI to convert that internal analysis into a human-readable client response.
+7. Keep high-risk outputs marked for CA review.
 
 This is not yet a full production product. It is a working technical POC to demonstrate the core intelligence layer.
 
@@ -36,6 +37,7 @@ What to understand:
 - This is a FastAPI-based backend POC.
 - It has multiple specialist agents.
 - It has an offline Multi-RAG layer.
+- It has an OpenAI final response layer.
 - It is designed for CA workflows.
 
 ### Step 2: Project Brief
@@ -63,7 +65,7 @@ Purpose:
 Simple explanation:
 
 ```text
-User -> FastAPI -> Agent Orchestrator -> Specialist Agent -> Multi-RAG -> Structured Response
+User -> FastAPI -> Agent Orchestrator -> Specialist Agent -> Multi-RAG -> OpenAI -> Human-readable Response
 ```
 
 Use this document with the technical team.
@@ -83,7 +85,7 @@ git clone https://github.com/Mriganka10/Multi-Rag-AI.git
 cd Multi-Rag-AI
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev,cloud]"
 cp .env.example .env
 uvicorn app.main:app --reload
 ```
@@ -123,6 +125,16 @@ Agents included:
 4. Financial Analysis Agent
 5. ITR Draft Agent
 6. Agent Orchestrator
+
+### Step 6A: Models and Agent Techniques
+
+File: `docs/MODELS_AND_AGENTS.md`
+
+Purpose:
+
+- Explains which model or technique each agent currently uses.
+- Clarifies that all final client-facing responses currently use the configured OpenAI model.
+- Helps the team explain that specialist agents run before OpenAI is called.
 
 ### Step 7: Multi-RAG Design
 
@@ -175,7 +187,7 @@ Use this document to plan technical milestones.
 
 Tell the technical team:
 
-"This is a backend POC for an Agentic AI system for Chartered Accountants. The main architecture is FastAPI plus an Agent Orchestrator plus multiple domain agents. The current RAG layer is offline and simple, but the code is structured so that Qdrant, embeddings, LLM drafting, and cloud OCR can be added later."
+"This is a backend POC for an Agentic AI system for Chartered Accountants. The main architecture is FastAPI plus an Agent Orchestrator plus multiple domain agents. The selected specialist agent runs first, RAG context is attached, and OpenAI then generates the final human-readable response. The current RAG layer is offline TF-IDF, but the code is structured so Qdrant, embeddings, stronger OCR, and approval workflows can be added later."
 
 ## 4. Technical Team Walkthrough
 
@@ -351,13 +363,13 @@ Give the technical team these tasks in sequence.
    - `client_documents`
 5. Add source citations to every legal response.
 
-### Priority 4: Add LLM-Based Drafting
+### Priority 4: Improve LLM-Based Drafting
 
-1. Add LLM provider interface.
-2. Add OpenAI model integration.
-3. Add prompt templates for SCN replies.
-4. Add prompt templates for financial commentary.
-5. Add reviewer-editable draft outputs.
+1. Add richer prompt templates for SCN replies.
+2. Add prompt templates for financial commentary.
+3. Add reviewer-editable draft outputs.
+4. Add version history for generated responses.
+5. Add model/cost policy per workflow if needed.
 
 ### Priority 5: Add Frontend
 
@@ -381,7 +393,7 @@ Give the technical team these tasks in sequence.
 
 Tell the business team:
 
-"We have prepared a POC of an AI assistant for Chartered Accountant firms. It can process CA-related documents, route tasks to specialist AI agents, retrieve relevant tax/accounting knowledge, and generate structured analysis or draft responses. It is not a final filing tool yet. It is a productivity and review assistant for CA teams."
+"We have prepared a POC of an AI assistant for Chartered Accountant firms. It can process CA-related documents, route tasks to specialist agents, retrieve relevant tax/accounting knowledge, and use OpenAI to produce a human-readable analysis or draft response for CA review. It is not a final filing tool yet. It is a productivity and review assistant for CA teams."
 
 ## 7. Functionalities Prepared for Business Demonstration
 
@@ -593,6 +605,8 @@ Already available in the repo:
 - Financial analysis agent
 - Draft ITR helper
 - Offline Multi-RAG retriever
+- OpenAI final response layer
+- Tenant-scoped RAG learning controls
 - Seed knowledge files
 - API documentation
 - Setup documentation
@@ -608,7 +622,7 @@ Not yet complete:
 - Login and user roles
 - Real cloud OCR
 - Qdrant vector database
-- OpenAI LLM drafting
+- Workflow-specific prompt templates
 - Full source citations
 - Real legal knowledge ingestion
 - Client workspace management

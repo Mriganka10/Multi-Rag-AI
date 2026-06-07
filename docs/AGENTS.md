@@ -16,6 +16,30 @@ Routing examples:
 
 Production routing can later be upgraded to an LLM classifier or LangGraph supervisor.
 
+After routing, the selected specialist agent runs first. OpenAI is called only after the agent has produced its internal structured result and RAG context has been attached.
+
+## Current Model and Technique Map
+
+The current implementation uses one OpenAI model for the final response layer, not one separate LLM per agent.
+
+| Component | Current model or technique | Purpose |
+| --- | --- | --- |
+| OpenAI response layer | `OPENAI_MODEL`, default `gpt-4.1-mini` | Generates the final human-readable client report for all agents. |
+| Orchestrator routing | Keyword/rule-based classifier | Selects `scn`, `bank_statement`, `financial`, `itr`, or `ocr`. |
+| OCR agent | `pypdf`, `pytesseract`, direct text/CSV reads | Extracts text and transaction-like rows. |
+| Bank Statement agent | Rule-based parser plus `pandas` | Computes credits, debits, high-value entries, EMI/loan, interest, and cash observations. |
+| SCN agent | Regex extraction, deterministic draft template, TF-IDF RAG | Detects sections, allegations, amounts, retrieves tax context, and creates an internal draft. |
+| Financial agent | Ratio formulas plus `sklearn.ensemble.IsolationForest` | Computes ratios and flags anomaly indicators. |
+| ITR agent | Regex/rule-based extraction | Extracts draft salary, interest, capital gain, deduction, and TDS values. |
+| Multi-RAG | `TfidfVectorizer` plus cosine similarity | Retrieves local knowledge context from `data/knowledge`. |
+
+So, for example:
+
+- SCN text routes to `SCNAgent`, then OpenAI `gpt-4.1-mini` writes the final response using SCN analysis plus RAG context.
+- Bank statement files route through OCR/extraction and `BankStatementAgent`, then OpenAI `gpt-4.1-mini` writes the final response using bank analysis plus RAG context.
+
+Future production versions may use different LLMs per task, but the current branch uses one configurable OpenAI model for final response generation.
+
 ## OCR Agent
 
 File: `app/agents/ocr_agent.py`
