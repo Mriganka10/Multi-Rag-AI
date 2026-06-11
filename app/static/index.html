@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CA Agentic AI RAG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-panel" aria-label="Workspace controls">
+        <div class="brand-block">
+          <div class="brand-mark">CA</div>
+          <div>
+            <h1>CA Agentic AI RAG</h1>
+            <p>Agent workspace</p>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="tenantId">Client / engagement</label>
+          <input id="tenantId" type="text" value="default" maxlength="64" />
+        </div>
+
+        <div class="control-row">
+          <input id="learningConsent" type="checkbox" />
+          <label for="learningConsent">Allow learning for this run</label>
+        </div>
+
+        <div class="control-row">
+          <input id="approveLearning" type="checkbox" />
+          <label for="approveLearning">CA-approved learning</label>
+        </div>
+
+        <div class="quick-prompts" aria-label="Example prompts">
+          <button type="button" data-example="scn">SCN reply</button>
+          <button type="button" data-example="bank">Bank analysis</button>
+          <button type="button" data-example="financial">Financial review</button>
+        </div>
+
+        <nav class="side-links" aria-label="Developer links">
+          <a href="/docs">API docs</a>
+          <a href="/openapi.json">OpenAPI JSON</a>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-header">
+          <div>
+            <p class="eyebrow">Multi-agent assistant</p>
+            <h2>Ask for CA workflow analysis</h2>
+          </div>
+          <div class="status-pill" id="healthStatus">Checking API</div>
+        </header>
+
+        <section class="conversation" id="conversation" aria-live="polite">
+          <article class="message assistant-message">
+            <div class="message-label">Assistant</div>
+            <div class="message-body">
+              Upload a notice, bank statement, financial data file, or paste text below. The backend
+              will route the request to the relevant agent and return a client-readable response.
+            </div>
+          </article>
+        </section>
+
+        <form class="composer" id="analysisForm">
+          <div class="attachment-bar" id="attachmentBar" hidden>
+            <span id="attachmentName"></span>
+            <button type="button" id="removeFile" aria-label="Remove selected file">Remove</button>
+          </div>
+
+          <label class="sr-only" for="promptInput">Prompt or document text</label>
+          <textarea
+            id="promptInput"
+            rows="4"
+            placeholder="Ask about a GST notice, bank statement, financial report, or ITR preparation..."
+            required
+          ></textarea>
+
+          <div class="composer-actions">
+            <input
+              id="fileInput"
+              type="file"
+              accept=".txt,.pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg"
+              hidden
+            />
+            <button type="button" class="secondary-button" id="attachButton">Attach file</button>
+            <button type="submit" class="primary-button" id="submitButton">Analyze</button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
