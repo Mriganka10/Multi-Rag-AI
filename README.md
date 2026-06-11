@@ -55,6 +55,12 @@ uvicorn app.main:app --reload
 Open:
 
 ```text
+http://127.0.0.1:8000/
+```
+
+The root URL opens the user-friendly assistant screen with a prompt box, file attachment, and readable response area. Developers can still use Swagger at:
+
+```text
 http://127.0.0.1:8000/docs
 ```
 

@@ -129,6 +129,14 @@ uvicorn app.main:app --reload
 Open the API docs:
 
 ```text
+http://127.0.0.1:8000/
+```
+
+The root URL opens the user-friendly assistant UI with a prompt box and file attachment option.
+
+Open the developer API docs:
+
+```text
 http://127.0.0.1:8000/docs
 ```
 
