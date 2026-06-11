@@ -15,6 +15,15 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_web_app_serves_chat_interface() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "CA Agentic AI RAG" in response.text
+    assert "Attach file" in response.text
+
+
 def test_analyze_text_endpoint() -> None:
     response = client.post(
         "/api/v1/tasks/analyze-text",
