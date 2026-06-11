@@ -8,57 +8,56 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="side-panel" aria-label="Workspace controls">
-        <div class="brand-block">
-          <div class="brand-mark">CA</div>
-          <div>
-            <h1>CA Agentic AI RAG</h1>
-            <p>Agent workspace</p>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label for="tenantId">Client / engagement</label>
-          <input id="tenantId" type="text" value="default" maxlength="64" />
-        </div>
-
-        <div class="control-row">
-          <input id="learningConsent" type="checkbox" />
-          <label for="learningConsent">Allow learning for this run</label>
-        </div>
-
-        <div class="control-row">
-          <input id="approveLearning" type="checkbox" />
-          <label for="approveLearning">CA-approved learning</label>
-        </div>
-
-        <div class="quick-prompts" aria-label="Example prompts">
-          <button type="button" data-example="scn">SCN reply</button>
-          <button type="button" data-example="bank">Bank analysis</button>
-          <button type="button" data-example="financial">Financial review</button>
-        </div>
-
-        <nav class="side-links" aria-label="Developer links">
-          <a href="/docs">API docs</a>
-          <a href="/openapi.json">OpenAPI JSON</a>
-        </nav>
-      </aside>
-
       <main class="workspace">
         <header class="workspace-header">
-          <div>
+          <div class="brand-block">
+            <div class="brand-mark">CA</div>
+            <div>
+              <h1>CA Agentic AI RAG</h1>
+              <p class="eyebrow">Multi-agent assistant</p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/docs">API docs</a>
+            <a href="/openapi.json">OpenAPI JSON</a>
+            <div class="status-pill" id="healthStatus">Checking API</div>
+          </div>
+        </header>
+
+        <section class="workspace-controls" aria-label="Analysis controls">
+          <div class="field-group">
+            <label for="tenantId">Client / engagement</label>
+            <input id="tenantId" type="text" value="default" maxlength="64" />
+          </div>
+
+          <div class="control-row">
+            <input id="learningConsent" type="checkbox" />
+            <label for="learningConsent">Allow learning</label>
+          </div>
+
+          <div class="control-row">
+            <input id="approveLearning" type="checkbox" />
+            <label for="approveLearning">CA-approved learning</label>
+          </div>
+        </section>
+
+        <section class="intro-panel">
+          <div class="intro-content">
             <p class="eyebrow">Multi-agent assistant</p>
             <h2>Ask for CA workflow analysis</h2>
+            <p>
+              Upload a notice, bank statement, financial data file, or paste text below. The backend
+              will route the request to the relevant agent and return a client-readable response.
+            </p>
           </div>
-          <div class="status-pill" id="healthStatus">Checking API</div>
-        </header>
+        </section>
 
         <section class="conversation" id="conversation" aria-live="polite">
           <article class="message assistant-message">
             <div class="message-label">Assistant</div>
             <div class="message-body">
-              Upload a notice, bank statement, financial data file, or paste text below. The backend
-              will route the request to the relevant agent and return a client-readable response.
+              Start with a prompt or attach a file. The selected agent will be shown above the
+              response once analysis completes.
             </div>
           </article>
         </section>

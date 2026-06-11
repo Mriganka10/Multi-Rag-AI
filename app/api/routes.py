@@ -66,6 +66,7 @@ def rag_search(query: str, collections: str | None = None) -> dict[str, object]:
 
 def _client_response(result) -> PlainTextResponse:
     response = PlainTextResponse(result.client_response)
+    response.headers["X-Agent-Selected"] = str(result.agent)
     response.headers["X-LLM-Provider"] = str(result.llm.get("provider", "unknown"))
     response.headers["X-LLM-Model"] = str(result.llm.get("model", "unknown"))
     response.headers["X-LLM-Fallback"] = str(result.llm.get("used_fallback", False)).lower()

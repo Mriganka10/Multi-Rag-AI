@@ -35,6 +35,7 @@ def test_analyze_text_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
+    assert response.headers["x-agent-selected"] == "bank_statement"
     assert response.headers["x-llm-provider"] == "offline"
     assert response.headers["x-llm-fallback"] == "false"
     assert "Analysis Report" in response.text
