@@ -55,7 +55,7 @@ async function checkHealth() {
   }
 }
 
-function addMessage(role, text, meta = []) {
+function addMessage(role, text, meta = [], agent = "") {
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
 
@@ -67,7 +67,16 @@ function addMessage(role, text, meta = []) {
   body.className = "message-body";
   body.textContent = text;
 
-  article.append(label, body);
+  article.append(label);
+
+  if (role !== "user" && agent) {
+    const agentBanner = document.createElement("div");
+    agentBanner.className = "agent-banner";
+    agentBanner.textContent = `Selected agent: ${agent}`;
+    article.append(agentBanner);
+  }
+
+  article.append(body);
 
   if (meta.length > 0) {
     const metaRow = document.createElement("div");
@@ -141,11 +150,15 @@ async function analyzeFile(prompt, file) {
 }
 
 function responseMeta(response) {
+  const agent = response.headers.get("x-agent-selected");
   const provider = response.headers.get("x-llm-provider");
   const model = response.headers.get("x-llm-model");
   const fallback = response.headers.get("x-llm-fallback");
   const meta = [];
 
+  if (agent) {
+    meta.push(`Agent: ${agent}`);
+  }
   if (provider) {
     meta.push(`Provider: ${provider}`);
   }
@@ -157,6 +170,10 @@ function responseMeta(response) {
   }
 
   return meta;
+}
+
+function responseAgent(response) {
+  return response.headers.get("x-agent-selected") || "";
 }
 
 async function handleSubmit(event) {
@@ -171,6 +188,9 @@ async function handleSubmit(event) {
   }
 
   addMessage("user", buildUserPreview(prompt, file));
+  promptInput.value = "";
+  fileInput.value = "";
+  updateAttachment();
   submitButton.disabled = true;
   submitButton.textContent = "Analyzing...";
 
@@ -178,16 +198,14 @@ async function handleSubmit(event) {
     const response = file ? await analyzeFile(prompt, file) : await analyzeText(prompt);
     const text = await response.text();
     const meta = responseMeta(response);
+    const agent = responseAgent(response);
 
     if (!response.ok) {
-      addMessage("assistant", text || `Request failed with status ${response.status}`, meta);
+      addMessage("assistant", text || `Request failed with status ${response.status}`, meta, agent);
       return;
     }
 
-    addMessage("assistant", text, meta);
-    promptInput.value = "";
-    fileInput.value = "";
-    updateAttachment();
+    addMessage("assistant", text, meta, agent);
   } catch (error) {
     addMessage(
       "assistant",
