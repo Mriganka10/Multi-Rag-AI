@@ -42,13 +42,16 @@ button {
   cursor: pointer;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .app-shell {
   min-height: 100vh;
 }
 
 .workspace {
   min-height: 100vh;
-  padding-bottom: 230px;
 }
 
 .workspace-header {
@@ -224,11 +227,12 @@ button {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 0 0;
+  padding: 18px 0 230px;
 }
 
 .message {
   width: min(860px, 100%);
+  scroll-margin-bottom: 220px;
 }
 
 .user-message {
@@ -293,13 +297,13 @@ button {
   position: fixed;
   z-index: 30;
   right: max(16px, calc((100vw - var(--content-width)) / 2));
-  bottom: 18px;
+  bottom: 16px;
   left: max(16px, calc((100vw - var(--content-width)) / 2));
   display: grid;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -311,7 +315,8 @@ button {
   align-items: center;
   border: 1px solid #b7d8d2;
   border-radius: 8px;
-  padding: 8px 10px;
+  min-height: 36px;
+  padding: 7px 10px;
   color: var(--accent-strong);
   background: #eefaf7;
   font-size: 13px;
@@ -326,12 +331,12 @@ button {
 
 .composer textarea {
   width: 100%;
-  max-height: 170px;
-  min-height: 88px;
-  resize: vertical;
+  max-height: 86px;
+  min-height: 44px;
+  resize: none;
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 14px;
+  padding: 11px 13px;
   color: var(--text);
   background: #f8fafc;
   outline: none;
@@ -348,7 +353,7 @@ button {
 .primary-button,
 .secondary-button {
   border-radius: 8px;
-  padding: 11px 16px;
+  padding: 10px 15px;
   font-weight: 800;
 }
 
@@ -389,10 +394,6 @@ button {
 }
 
 @media (max-width: 740px) {
-  .workspace {
-    padding-bottom: 260px;
-  }
-
   .workspace-header {
     align-items: flex-start;
     flex-direction: column;
@@ -407,6 +408,14 @@ button {
   .intro-panel,
   .conversation {
     width: calc(100vw - 28px);
+  }
+
+  .conversation {
+    padding-bottom: 260px;
+  }
+
+  .message {
+    scroll-margin-bottom: 250px;
   }
 
   .workspace-controls {
