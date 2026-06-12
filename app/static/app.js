@@ -90,7 +90,12 @@ function addMessage(role, text, meta = [], agent = "") {
   }
 
   conversation.append(article);
-  article.scrollIntoView({ behavior: "smooth", block: "end" });
+  window.requestAnimationFrame(() => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
+  });
 }
 
 function getSelectedFile() {
@@ -100,8 +105,8 @@ function getSelectedFile() {
 function updateAttachment() {
   const file = getSelectedFile();
   if (!file) {
-    attachmentBar.hidden = true;
     attachmentName.textContent = "";
+    attachmentBar.hidden = true;
     return;
   }
 
