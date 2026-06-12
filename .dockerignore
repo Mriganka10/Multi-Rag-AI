@@ -1,0 +1,15 @@
+.git
+.venv
+.pytest_cache
+.ruff_cache
+*.egg-info
+__pycache__
+*.pyc
+.DS_Store
+.env
+.idea
+data/uploads/*
+data/outputs/*
+data/audit/*
+data/knowledge/learned/**/*.txt
+data/knowledge/learning_audit.jsonl
