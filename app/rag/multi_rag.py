@@ -4,6 +4,7 @@ from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from app.core.config import settings
 from app.models.schemas import RetrievedContext
 
 
@@ -41,6 +42,11 @@ class MultiRAG:
         collections: list[str] | None = None,
         top_k: int = 4,
     ) -> list[RetrievedContext]:
+        if settings.rag_provider.lower() == "qdrant":
+            qdrant_contexts = self._retrieve_from_qdrant(query, collections, top_k)
+            if qdrant_contexts:
+                return qdrant_contexts
+
         if not self.documents or self._matrix is None:
             return []
 
@@ -69,6 +75,66 @@ class MultiRAG:
                 )
             )
         return contexts
+
+    def _retrieve_from_qdrant(
+        self,
+        query: str,
+        collections: list[str] | None,
+        top_k: int,
+    ) -> list[RetrievedContext]:
+        if not settings.qdrant_url or not settings.openai_api_key:
+            return []
+
+        try:
+            from openai import OpenAI
+            from qdrant_client import QdrantClient
+        except ImportError:
+            return []
+
+        openai_client = OpenAI(api_key=settings.openai_api_key)
+        embedding = openai_client.embeddings.create(
+            model=settings.openai_embedding_model,
+            input=query,
+        )
+        query_vector = embedding.data[0].embedding
+        qdrant_client = QdrantClient(
+            url=settings.qdrant_url,
+            api_key=settings.qdrant_api_key,
+        )
+
+        contexts: list[RetrievedContext] = []
+        collection_names = collections or [
+            "income_tax",
+            "gst",
+            "accounting_standards",
+            "case_laws",
+            "notifications",
+        ]
+        for collection in collection_names:
+            qdrant_collection = f"{settings.qdrant_collection_prefix}_{collection}"
+            try:
+                hits = qdrant_client.search(
+                    collection_name=qdrant_collection,
+                    query_vector=query_vector,
+                    limit=top_k,
+                )
+            except Exception:
+                continue
+
+            for hit in hits:
+                payload = hit.payload or {}
+                text = str(payload.get("text", ""))
+                if not text:
+                    continue
+                contexts.append(
+                    RetrievedContext(
+                        collection=collection,
+                        score=round(float(hit.score), 4),
+                        text=text,
+                        source=str(payload.get("source", qdrant_collection)),
+                    )
+                )
+        return sorted(contexts, key=lambda item: item.score, reverse=True)[:top_k]
 
     def _load_documents(self) -> list[KnowledgeDocument]:
         if not self.knowledge_dir.exists():
