@@ -38,7 +38,7 @@ Production systems must treat all uploaded data as confidential.
 ### Authentication and Authorization
 
 - Enable Basic Auth for the AWS demo using `AUTH_ENABLED=true`.
-- Configure `AUTH_USERNAME`, `AUTH_PASSWORD`, and `AUTH_DEFAULT_ROLE` through AWS secrets or App Runner secret variables.
+- Configure `AUTH_USERNAME`, `AUTH_PASSWORD`, and `AUTH_DEFAULT_ROLE` through AWS-managed secrets or protected Elastic Beanstalk environment properties.
 - Replace Basic Auth with Cognito or enterprise SSO before a broader production rollout.
 - Use role checks for sensitive workflows such as CA-approved RAG learning.
 - Restrict client data by firm, team, and engagement.
@@ -60,6 +60,7 @@ Production systems must treat all uploaded data as confidential.
 Track:
 
 - Who uploaded documents.
+- Who logged in successfully or failed login.
 - Which agent processed the task.
 - Which sources were retrieved.
 - What draft was generated.
@@ -67,6 +68,27 @@ Track:
 - When an output was exported or submitted.
 
 The current implementation writes audit events to PostgreSQL when `DATABASE_URL` is configured. Without a database, it writes local JSONL audit records under `data/audit`.
+
+In the AWS demo, audit records are stored in Amazon RDS PostgreSQL:
+
+```text
+DB identifier: ca-agentic-ai-audit-db
+Database name: ca_agentic_ai
+Region: ap-south-1
+```
+
+The RDS console Query Editor does not work for this normal RDS PostgreSQL instance because that console feature is mainly for Aurora Serverless/Data API databases. To inspect records, connect to the Elastic Beanstalk EC2 instance using AWS Systems Manager Session Manager, then run `psql` from inside the AWS network.
+
+Useful query:
+
+```sql
+select timestamp, event_type, tenant_id, actor, status, metadata
+from audit_events
+order by id desc
+limit 20;
+```
+
+Current audit scope is enough to prove that application events are reaching PostgreSQL. A production release should add explicit `login_success`, `login_failed`, `document_uploaded`, `analysis_started`, `analysis_completed`, and `analysis_failed` events so owner activity tracking is complete.
 
 ### Prompt and RAG Safety
 

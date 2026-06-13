@@ -23,6 +23,7 @@ The design keeps ITR automation and production-grade government integrations beh
 - [LLM Responses and RAG Learning](docs/LLM_AND_LEARNING.md)
 - [Security and Compliance](docs/SECURITY_AND_COMPLIANCE.md)
 - [AWS Deployment Guide](docs/AWS_DEPLOYMENT.md)
+- [AWS Deployment Walkthrough](docs/AWS_DEPLOYMENT_WALKTHROUGH.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Architecture
