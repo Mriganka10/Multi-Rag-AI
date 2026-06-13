@@ -172,6 +172,31 @@ Important point:
 
 The system must not file ITRs, submit SCN replies, or finalize tax positions without CA approval.
 
+### Step 8A: AWS Deployment Guide
+
+File: `docs/AWS_DEPLOYMENT.md`
+
+Purpose:
+
+- Shows the actual AWS deployment path used for the public demo.
+- Explains the deployed Elastic Beanstalk, EC2, S3, RDS, IAM, and Session Manager setup.
+- Gives the public URL, health URL, and operational verification steps.
+
+Use this document when checking or repeating the cloud deployment.
+
+### Step 8B: AWS Deployment Walkthrough
+
+File: `docs/AWS_DEPLOYMENT_WALKTHROUGH.md`
+
+Purpose:
+
+- Explains the deployment journey in beginner-friendly language.
+- Clarifies the difference between EC2 and Elastic Beanstalk.
+- Explains IAM, roles, policies, security groups, S3 lifecycle rules, RDS PostgreSQL, and server rebooting.
+- Records the issues faced during deployment and how they were fixed.
+
+Use this document to understand why each AWS step was done.
+
 ### Step 9: Roadmap
 
 File: `docs/ROADMAP.md`
