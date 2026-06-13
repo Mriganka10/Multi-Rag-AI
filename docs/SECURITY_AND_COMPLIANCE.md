@@ -37,8 +37,10 @@ Production systems must treat all uploaded data as confidential.
 
 ### Authentication and Authorization
 
-- Add user authentication.
-- Add role-based access control.
+- Enable Basic Auth for the AWS demo using `AUTH_ENABLED=true`.
+- Configure `AUTH_USERNAME`, `AUTH_PASSWORD`, and `AUTH_DEFAULT_ROLE` through AWS-managed secrets or protected Elastic Beanstalk environment properties.
+- Replace Basic Auth with Cognito or enterprise SSO before a broader production rollout.
+- Use role checks for sensitive workflows such as CA-approved RAG learning.
 - Restrict client data by firm, team, and engagement.
 - Separate admin, CA reviewer, preparer, and read-only roles.
 
@@ -48,6 +50,8 @@ Production systems must treat all uploaded data as confidential.
 - Use TLS in transit.
 - Store secrets in a managed secret vault.
 - Never commit `.env` files or API keys to Git.
+- Store uploaded documents in a private S3 bucket when `STORAGE_PROVIDER=s3`.
+- Use S3 default encryption or KMS encryption through `S3_KMS_KEY_ID`.
 - Avoid logging document contents or personally identifiable data.
 - Apply retention rules for uploaded documents and generated outputs.
 
@@ -56,11 +60,35 @@ Production systems must treat all uploaded data as confidential.
 Track:
 
 - Who uploaded documents.
+- Who logged in successfully or failed login.
 - Which agent processed the task.
 - Which sources were retrieved.
 - What draft was generated.
 - Who reviewed or approved the final output.
 - When an output was exported or submitted.
+
+The current implementation writes audit events to PostgreSQL when `DATABASE_URL` is configured. Without a database, it writes local JSONL audit records under `data/audit`.
+
+In the AWS demo, audit records are stored in Amazon RDS PostgreSQL:
+
+```text
+DB identifier: ca-agentic-ai-audit-db
+Database name: ca_agentic_ai
+Region: ap-south-1
+```
+
+The RDS console Query Editor does not work for this normal RDS PostgreSQL instance because that console feature is mainly for Aurora Serverless/Data API databases. To inspect records, connect to the Elastic Beanstalk EC2 instance using AWS Systems Manager Session Manager, then run `psql` from inside the AWS network.
+
+Useful query:
+
+```sql
+select timestamp, event_type, tenant_id, actor, status, metadata
+from audit_events
+order by id desc
+limit 20;
+```
+
+Current audit scope is enough to prove that application events are reaching PostgreSQL. A production release should add explicit `login_success`, `login_failed`, `document_uploaded`, `analysis_started`, `analysis_completed`, and `analysis_failed` events so owner activity tracking is complete.
 
 ### Prompt and RAG Safety
 
@@ -71,6 +99,8 @@ Track:
 - Add explicit uncertainty where data is incomplete.
 - Keep learned RAG content opt-in per tenant or engagement.
 - Load only CA-approved learned content into retrieval.
+- CA-approved learned content requires an authenticated `admin` or `reviewer` role when authentication is enabled.
+- Qdrant Cloud retrieval can be enabled with `RAG_PROVIDER=qdrant`; local TF-IDF remains the fallback for development.
 
 ### Government Portal Integrations
 

@@ -60,11 +60,25 @@ APP_NAME="CA Agentic AI RAG"
 ENVIRONMENT=local
 DATA_DIR=data
 OPENAI_API_KEY=
-QDRANT_URL=
-QDRANT_API_KEY=
 OCR_PROVIDER=local
 LLM_PROVIDER=openai
 OPENAI_MODEL=gpt-4.1-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+AUTH_ENABLED=false
+AUTH_USERNAME=admin
+AUTH_PASSWORD=
+AUTH_DEFAULT_ROLE=admin
+DATABASE_URL=
+AUDIT_ENABLED=true
+STORAGE_PROVIDER=local
+S3_BUCKET=
+S3_PREFIX=ca-agentic-ai
+S3_KMS_KEY_ID=
+AWS_REGION=ap-south-1
+RAG_PROVIDER=local
+QDRANT_URL=
+QDRANT_API_KEY=
+QDRANT_COLLECTION_PREFIX=ca
 RAG_LEARNING_ENABLED=true
 RAG_LEARNING_DEFAULT_CONSENT=false
 ```
@@ -120,6 +134,24 @@ RAG_LEARNING_DEFAULT_CONSENT=false
 
 Keep default consent as `false` in production. Send request-level consent and approval only when the client or engagement allows it.
 
+## Production Controls
+
+For an AWS demo or production deployment, enable authentication and external persistence:
+
+```text
+AUTH_ENABLED=true
+AUTH_USERNAME=admin
+AUTH_PASSWORD=strong_password_from_secret_manager
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+STORAGE_PROVIDER=s3
+S3_BUCKET=your-private-upload-bucket
+RAG_PROVIDER=qdrant
+QDRANT_URL=your_qdrant_cloud_url
+QDRANT_API_KEY=your_qdrant_api_key
+```
+
+See `docs/AWS_DEPLOYMENT.md` for the step-by-step AWS deployment path.
+
 ## Run API Server
 
 ```bash
@@ -127,6 +159,14 @@ uvicorn app.main:app --reload
 ```
 
 Open the API docs:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The root URL opens the user-friendly assistant UI with a prompt box and file attachment option.
+
+Open the developer API docs:
 
 ```text
 http://127.0.0.1:8000/docs

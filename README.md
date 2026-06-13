@@ -22,6 +22,8 @@ The design keeps ITR automation and production-grade government integrations beh
 - [Multi-RAG Design](docs/RAG_DESIGN.md)
 - [LLM Responses and RAG Learning](docs/LLM_AND_LEARNING.md)
 - [Security and Compliance](docs/SECURITY_AND_COMPLIANCE.md)
+- [AWS Deployment Guide](docs/AWS_DEPLOYMENT.md)
+- [AWS Deployment Walkthrough](docs/AWS_DEPLOYMENT_WALKTHROUGH.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Architecture
@@ -53,6 +55,12 @@ uvicorn app.main:app --reload
 ```
 
 Open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The root URL opens the user-friendly assistant screen with a prompt box, file attachment, and readable response area. Developers can still use Swagger at:
 
 ```text
 http://127.0.0.1:8000/docs

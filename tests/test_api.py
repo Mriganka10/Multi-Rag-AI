@@ -1,3 +1,4 @@
+import base64
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -8,11 +9,77 @@ from app.main import app
 client = TestClient(app)
 
 
+def basic_auth(username: str, password: str) -> dict[str, str]:
+    token = base64.b64encode(f"{username}:{password}".encode()).decode()
+    return {"Authorization": f"Basic {token}"}
+
+
 def test_health_endpoint() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_auth_enabled_requires_basic_credentials() -> None:
+    from app.core.config import settings
+
+    previous = (settings.auth_enabled, settings.auth_username, settings.auth_password)
+    settings.auth_enabled = True
+    settings.auth_username = "demo"
+    settings.auth_password = "secret"
+    try:
+        unauthenticated = client.get("/")
+        authenticated = client.get("/", headers=basic_auth("demo", "secret"))
+    finally:
+        settings.auth_enabled, settings.auth_username, settings.auth_password = previous
+
+    assert unauthenticated.status_code == 401
+    assert authenticated.status_code == 200
+
+
+def test_web_app_serves_chat_interface() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "CA Agentic AI RAG" in response.text
+    assert "Attach file" in response.text
+
+
+def test_approved_learning_requires_reviewer_role() -> None:
+    from app.core.config import settings
+
+    previous = (
+        settings.auth_enabled,
+        settings.auth_username,
+        settings.auth_password,
+        settings.auth_default_role,
+    )
+    settings.auth_enabled = True
+    settings.auth_username = "preparer"
+    settings.auth_password = "secret"
+    settings.auth_default_role = "preparer"
+    try:
+        response = client.post(
+            "/api/v1/tasks/analyze-text",
+            headers=basic_auth("preparer", "secret"),
+            json={
+                "query": "Analyze bank statement",
+                "text": "2026-04-03 Cash Deposit 0 150000 400000",
+                "learning_consent": True,
+                "approve_learning": True,
+            },
+        )
+    finally:
+        (
+            settings.auth_enabled,
+            settings.auth_username,
+            settings.auth_password,
+            settings.auth_default_role,
+        ) = previous
+
+    assert response.status_code == 403
 
 
 def test_analyze_text_endpoint() -> None:
@@ -26,6 +93,7 @@ def test_analyze_text_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
+    assert response.headers["x-agent-selected"] == "bank_statement"
     assert response.headers["x-llm-provider"] == "offline"
     assert response.headers["x-llm-fallback"] == "false"
     assert "Analysis Report" in response.text

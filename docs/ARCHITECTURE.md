@@ -33,6 +33,48 @@ OpenAI LLM Response Layer
 Human-readable client response
 ```
 
+## Deployed AWS Architecture
+
+The public demo is deployed on AWS Elastic Beanstalk in `ap-south-1`.
+
+```text
+Client Browser
+        |
+        v
+Elastic Beanstalk public URL
+        |
+        v
+Elastic Beanstalk environment: ca-agentic-ai-prod
+        |
+        v
+EC2 instance: i-0c35f5212d41a1752
+        |
+        v
+Docker container running FastAPI
+        |
+        +-- Amazon S3: uploaded client files
+        +-- Amazon RDS PostgreSQL: audit events
+        +-- OpenAI API: final response generation
+```
+
+Elastic Beanstalk is the deployment manager. It provisions and manages the EC2 server, deploys the Docker application bundle, monitors health, and exposes the public URL.
+
+EC2 is the actual virtual server where the container runs. In this project, the EC2 instance should normally be treated as a managed part of Elastic Beanstalk. Direct EC2 actions, such as rebooting the instance, are used only for operational fixes like refreshing the SSM agent after IAM role changes.
+
+The deployed URL is:
+
+```text
+http://ca-agentic-ai-prod.eba-uve6zn4c.ap-south-1.elasticbeanstalk.com/
+```
+
+The health endpoint is:
+
+```text
+http://ca-agentic-ai-prod.eba-uve6zn4c.ap-south-1.elasticbeanstalk.com/health
+```
+
+See `docs/AWS_DEPLOYMENT.md` for the deployment guide and `docs/AWS_DEPLOYMENT_WALKTHROUGH.md` for the detailed step-by-step explanation.
+
 ## Runtime Components
 
 ### FastAPI Layer
