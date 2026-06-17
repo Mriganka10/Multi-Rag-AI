@@ -12,9 +12,7 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY data/knowledge ./data/knowledge
-COPY data/uploads/.gitkeep ./data/uploads/.gitkeep
-COPY data/outputs/.gitkeep ./data/outputs/.gitkeep
-COPY data/audit/.gitkeep ./data/audit/.gitkeep
+RUN mkdir -p data/uploads data/outputs data/audit
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e ".[cloud]"
