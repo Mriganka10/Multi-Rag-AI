@@ -108,7 +108,7 @@ Response headers:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -148,7 +148,7 @@ The response headers still identify the final response provider and model:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 

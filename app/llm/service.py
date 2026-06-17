@@ -51,32 +51,36 @@ class LLMService:
             raise LLMProviderError("Install cloud dependencies with: pip install -e '.[dev,cloud]'") from exc
 
         client = OpenAI(api_key=settings.openai_api_key)
+        request_kwargs = {
+            "model": settings.openai_model,
+            "input": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert AI assistant for Chartered Accountants. "
+                        "Give clear, professional, client-readable analysis in plain text. "
+                        "Use concise headings, spacing, and bullets where useful. "
+                        "Never return JSON, raw dictionaries, or developer payloads to the client. "
+                        "Do not claim that a tax filing, notice response, or legal position is final. "
+                        "Mention that CA review is required where relevant."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": self._build_prompt(
+                        query=query,
+                        extracted_text=extracted_text,
+                        result=result,
+                        contexts=contexts,
+                    ),
+                },
+            ],
+        }
+        if settings.openai_model.startswith("gpt-5"):
+            request_kwargs["reasoning"] = {"effort": settings.openai_reasoning_effort}
+
         try:
-            response = client.responses.create(
-                model=settings.openai_model,
-                input=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are an expert AI assistant for Chartered Accountants. "
-                            "Give clear, professional, client-readable analysis in plain text. "
-                            "Use concise headings, spacing, and bullets where useful. "
-                            "Never return JSON, raw dictionaries, or developer payloads to the client. "
-                            "Do not claim that a tax filing, notice response, or legal position is final. "
-                            "Mention that CA review is required where relevant."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": self._build_prompt(
-                            query=query,
-                            extracted_text=extracted_text,
-                            result=result,
-                            contexts=contexts,
-                        ),
-                    },
-                ],
-            )
+            response = client.responses.create(**request_kwargs)
         except Exception as exc:
             raise LLMProviderError(f"OpenAI request failed: {exc}") from exc
         return LLMGeneration(

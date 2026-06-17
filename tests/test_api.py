@@ -1,4 +1,3 @@
-import base64
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -9,11 +8,6 @@ from app.main import app
 client = TestClient(app)
 
 
-def basic_auth(username: str, password: str) -> dict[str, str]:
-    token = base64.b64encode(f"{username}:{password}".encode()).decode()
-    return {"Authorization": f"Basic {token}"}
-
-
 def test_health_endpoint() -> None:
     response = client.get("/health")
 
@@ -21,20 +15,43 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_auth_enabled_requires_basic_credentials() -> None:
+def test_auth_enabled_requires_otp_session_for_api() -> None:
     from app.core.config import settings
 
-    previous = (settings.auth_enabled, settings.auth_username, settings.auth_password)
+    auth_client = TestClient(app)
+    previous = (settings.auth_enabled, settings.otp_dev_mode)
     settings.auth_enabled = True
-    settings.auth_username = "demo"
-    settings.auth_password = "secret"
+    settings.otp_dev_mode = True
     try:
-        unauthenticated = client.get("/")
-        authenticated = client.get("/", headers=basic_auth("demo", "secret"))
+        unauthenticated = auth_client.post(
+            "/api/v1/tasks/analyze-text",
+            json={
+                "query": "Analyze bank statement",
+                "text": "2026-04-03 Cash Deposit 0 150000 400000",
+            },
+        )
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "client@example.com"},
+        )
+        otp = otp_response.json()["dev_otp"]
+        login = auth_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "client@example.com", "otp": otp},
+        )
+        authenticated = auth_client.post(
+            "/api/v1/tasks/analyze-text",
+            json={
+                "query": "Analyze bank statement",
+                "text": "2026-04-03 Cash Deposit 0 150000 400000",
+            },
+        )
     finally:
-        settings.auth_enabled, settings.auth_username, settings.auth_password = previous
+        settings.auth_enabled, settings.otp_dev_mode = previous
 
     assert unauthenticated.status_code == 401
+    assert login.status_code == 200
+    assert login.json()["email"] == "client@example.com"
     assert authenticated.status_code == 200
 
 
@@ -50,20 +67,23 @@ def test_web_app_serves_chat_interface() -> None:
 def test_approved_learning_requires_reviewer_role() -> None:
     from app.core.config import settings
 
-    previous = (
-        settings.auth_enabled,
-        settings.auth_username,
-        settings.auth_password,
-        settings.auth_default_role,
-    )
+    auth_client = TestClient(app)
+    previous = (settings.auth_enabled, settings.otp_dev_mode, settings.auth_default_role)
     settings.auth_enabled = True
-    settings.auth_username = "preparer"
-    settings.auth_password = "secret"
+    settings.otp_dev_mode = True
     settings.auth_default_role = "preparer"
     try:
-        response = client.post(
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "preparer@example.com"},
+        )
+        otp = otp_response.json()["dev_otp"]
+        login = auth_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "preparer@example.com", "otp": otp},
+        )
+        response = auth_client.post(
             "/api/v1/tasks/analyze-text",
-            headers=basic_auth("preparer", "secret"),
             json={
                 "query": "Analyze bank statement",
                 "text": "2026-04-03 Cash Deposit 0 150000 400000",
@@ -72,13 +92,9 @@ def test_approved_learning_requires_reviewer_role() -> None:
             },
         )
     finally:
-        (
-            settings.auth_enabled,
-            settings.auth_username,
-            settings.auth_password,
-            settings.auth_default_role,
-        ) = previous
+        settings.auth_enabled, settings.otp_dev_mode, settings.auth_default_role = previous
 
+    assert login.status_code == 200
     assert response.status_code == 403
 
 

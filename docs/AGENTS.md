@@ -24,7 +24,7 @@ The current implementation uses one OpenAI model for the final response layer, n
 
 | Component | Current model or technique | Purpose |
 | --- | --- | --- |
-| OpenAI response layer | `OPENAI_MODEL`, default `gpt-4.1-mini` | Generates the final human-readable client report for all agents. |
+| OpenAI response layer | `OPENAI_MODEL`, default `gpt-5.5` | Generates the final human-readable client report for all agents. |
 | Orchestrator routing | Keyword/rule-based classifier | Selects `scn`, `bank_statement`, `financial`, `itr`, or `ocr`. |
 | OCR agent | `pypdf`, `pytesseract`, direct text/CSV reads | Extracts text and transaction-like rows. |
 | Bank Statement agent | Rule-based parser plus `pandas` | Computes credits, debits, high-value entries, EMI/loan, interest, and cash observations. |
@@ -35,8 +35,8 @@ The current implementation uses one OpenAI model for the final response layer, n
 
 So, for example:
 
-- SCN text routes to `SCNAgent`, then OpenAI `gpt-4.1-mini` writes the final response using SCN analysis plus RAG context.
-- Bank statement files route through OCR/extraction and `BankStatementAgent`, then OpenAI `gpt-4.1-mini` writes the final response using bank analysis plus RAG context.
+- SCN text routes to `SCNAgent`, then OpenAI `gpt-5.5` writes the final response using SCN analysis plus RAG context.
+- Bank statement files route through OCR/extraction and `BankStatementAgent`, then OpenAI `gpt-5.5` writes the final response using bank analysis plus RAG context.
 
 Future production versions may use different LLMs per task, but the current branch uses one configurable OpenAI model for final response generation.
 

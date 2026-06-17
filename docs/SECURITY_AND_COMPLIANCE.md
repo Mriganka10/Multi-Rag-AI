@@ -37,9 +37,10 @@ Production systems must treat all uploaded data as confidential.
 
 ### Authentication and Authorization
 
-- Enable Basic Auth for the AWS demo using `AUTH_ENABLED=true`.
-- Configure `AUTH_USERNAME`, `AUTH_PASSWORD`, and `AUTH_DEFAULT_ROLE` through AWS-managed secrets or protected Elastic Beanstalk environment properties.
-- Replace Basic Auth with Cognito or enterprise SSO before a broader production rollout.
+- Enable email OTP sign-in for the AWS demo using `AUTH_ENABLED=true`.
+- Configure SMTP or Amazon SES SMTP credentials through AWS-managed secrets or protected Elastic Beanstalk environment properties.
+- Set `AUTH_COOKIE_SECURE=true` in public HTTPS deployments.
+- For a broader production rollout, prefer SES-backed OTP, Cognito, or enterprise SSO with managed user lifecycle controls.
 - Use role checks for sensitive workflows such as CA-approved RAG learning.
 - Restrict client data by firm, team, and engagement.
 - Separate admin, CA reviewer, preparer, and read-only roles.

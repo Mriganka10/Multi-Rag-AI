@@ -1,12 +1,12 @@
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import PlainTextResponse
 
 from app.agents.orchestrator import AgentOrchestrator
 from app.core.audit import AuditLogger, safe_tenant_id
-from app.core.auth import CurrentUser, is_reviewer
+from app.core.auth import AuthService, CurrentUser, OTPRequest, OTPVerifyRequest, is_reviewer
 from app.core.config import settings
 from app.core.storage import UploadStorage
 from app.llm.service import LLMProviderError
@@ -16,13 +16,68 @@ router = APIRouter()
 orchestrator = AgentOrchestrator()
 audit_logger = AuditLogger()
 upload_storage = UploadStorage()
+auth_service = AuthService()
+
+
+@router.post("/auth/request-otp")
+def request_otp(payload: OTPRequest) -> dict[str, object]:
+    result = auth_service.request_otp(payload.email)
+    audit_logger.log(
+        event_type="auth_otp_requested",
+        tenant_id=safe_tenant_id(payload.email),
+        actor=payload.email,
+        status="success",
+        metadata={"email": payload.email},
+    )
+    return result
+
+
+@router.post("/auth/verify-otp")
+def verify_otp(payload: OTPVerifyRequest, response: Response) -> dict[str, object]:
+    user, session_token = auth_service.verify_otp(payload.email, payload.otp)
+    response.set_cookie(
+        key=settings.auth_session_cookie_name,
+        value=session_token,
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite="lax",
+        max_age=settings.auth_session_ttl_minutes * 60,
+    )
+    audit_logger.log(
+        event_type="auth_login",
+        tenant_id=user.tenant_id,
+        actor=user.email,
+        status="success",
+        metadata={"role": user.role},
+    )
+    return _user_payload(user)
+
+
+@router.get("/auth/me")
+def auth_me(request: Request) -> dict[str, object]:
+    return _user_payload(_current_user(request))
+
+
+@router.post("/auth/logout")
+def auth_logout(request: Request, response: Response) -> dict[str, str]:
+    user = _current_user(request)
+    auth_service.logout(request)
+    response.delete_cookie(settings.auth_session_cookie_name)
+    audit_logger.log(
+        event_type="auth_logout",
+        tenant_id=user.tenant_id,
+        actor=user.email,
+        status="success",
+        metadata={},
+    )
+    return {"message": "Signed out"}
 
 
 @router.post("/tasks/analyze-text", response_class=PlainTextResponse)
 def analyze_text(payload: TextAnalysisRequest, request: Request) -> PlainTextResponse:
     current_user = _current_user(request)
     _enforce_learning_approval(payload.approve_learning, current_user)
-    tenant_id = safe_tenant_id(payload.tenant_id)
+    tenant_id = current_user.tenant_id
     try:
         result = orchestrator.analyze_text(
             query=payload.query,
@@ -61,13 +116,12 @@ async def analyze_file(
     request: Request,
     query: str = Form(...),
     file: UploadFile = File(...),
-    tenant_id: str = Form("default"),
     learning_consent: bool = Form(False),
     approve_learning: bool = Form(False),
 ) -> PlainTextResponse:
     current_user = _current_user(request)
     _enforce_learning_approval(approve_learning, current_user)
-    safe_tenant = safe_tenant_id(tenant_id)
+    safe_tenant = current_user.tenant_id
     upload_dir = settings.data_dir / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
     suffix = Path(file.filename or "upload").suffix
@@ -120,7 +174,8 @@ async def analyze_file(
 
 
 @router.get("/rag/search")
-def rag_search(query: str, collections: str | None = None) -> dict[str, object]:
+def rag_search(query: str, request: Request, collections: str | None = None) -> dict[str, object]:
+    _current_user(request)
     selected = [item.strip() for item in collections.split(",")] if collections else None
     return {"contexts": orchestrator.rag.retrieve(query=query, collections=selected)}
 
@@ -135,7 +190,16 @@ def _client_response(result) -> PlainTextResponse:
 
 
 def _current_user(request: Request) -> CurrentUser:
-    return getattr(request.state, "current_user", CurrentUser(username="local-dev", role="admin"))
+    return auth_service.current_user(request)
+
+
+def _user_payload(user: CurrentUser) -> dict[str, object]:
+    return {
+        "email": user.email,
+        "role": user.role,
+        "tenant_id": user.tenant_id,
+        "authenticated": True,
+    }
 
 
 def _enforce_learning_approval(approve_learning: bool, current_user: CurrentUser) -> None:

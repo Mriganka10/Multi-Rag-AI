@@ -37,7 +37,7 @@ Default mode:
 ```text
 LLM_PROVIDER=openai
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 This calls OpenAI for the final client-readable response for both text prompts and file uploads.
@@ -45,7 +45,7 @@ This calls OpenAI for the final client-readable response for both text prompts a
 The current configured model is shared by all agents. The default is:
 
 ```text
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 Install cloud dependencies:
@@ -100,7 +100,7 @@ Use response headers to confirm the model:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 

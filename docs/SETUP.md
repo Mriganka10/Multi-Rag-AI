@@ -62,12 +62,22 @@ DATA_DIR=data
 OPENAI_API_KEY=
 OCR_PROVIDER=local
 LLM_PROVIDER=openai
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MODEL=gpt-5.5
+OPENAI_REASONING_EFFORT=medium
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 AUTH_ENABLED=false
-AUTH_USERNAME=admin
-AUTH_PASSWORD=
+AUTH_SESSION_COOKIE_NAME=ca_agent_session
+AUTH_SESSION_TTL_MINUTES=720
+AUTH_COOKIE_SECURE=false
 AUTH_DEFAULT_ROLE=admin
+OTP_TTL_MINUTES=10
+OTP_DEV_MODE=true
+OTP_EMAIL_FROM=no-reply@ca-agentic-ai.local
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_USE_TLS=true
 DATABASE_URL=
 AUDIT_ENABLED=true
 STORAGE_PROVIDER=local
@@ -96,7 +106,7 @@ Use OpenAI for client-readable responses:
 ```text
 LLM_PROVIDER=openai
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 Install cloud dependencies:
@@ -109,7 +119,7 @@ When OpenAI mode is active, successful responses include:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -140,8 +150,12 @@ For an AWS demo or production deployment, enable authentication and external per
 
 ```text
 AUTH_ENABLED=true
-AUTH_USERNAME=admin
-AUTH_PASSWORD=strong_password_from_secret_manager
+AUTH_SESSION_COOKIE_NAME=ca_agent_session
+AUTH_COOKIE_SECURE=true
+OTP_DEV_MODE=false
+SMTP_HOST=your_smtp_host
+SMTP_USERNAME=your_smtp_username
+SMTP_PASSWORD=smtp_password_from_secret_manager
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 STORAGE_PROVIDER=s3
 S3_BUCKET=your-private-upload-bucket

@@ -36,4 +36,4 @@ A draft-only ITR helper is included as an early workflow placeholder. Actual fil
 
 The repository contains a working FastAPI POC with deterministic local agents, an offline TF-IDF multi-RAG layer, and an OpenAI final response layer. Specialist agents perform the domain analysis first; OpenAI then converts the internal result and RAG context into a human-readable client response.
 
-The current OpenAI model is configured through `OPENAI_MODEL` and defaults to `gpt-4.1-mini`. The model is shared across all agents for final response generation.
+The current OpenAI model is configured through `OPENAI_MODEL` and defaults to `gpt-5.5`. The model is shared across all agents for final response generation.
