@@ -44,7 +44,7 @@ Docker container running FastAPI on port 8000
 
 ## What Is Implemented In Code
 
-- Basic Auth gate for the UI and APIs when `AUTH_ENABLED=true`.
+- email OTP sign-in gate for the UI and APIs when `AUTH_ENABLED=true`.
 - Role check before content can be marked as CA-approved learned RAG.
 - Tenant-scoped request metadata using `tenant_id`.
 - Upload persistence to S3 when `STORAGE_PROVIDER=s3`.
@@ -143,13 +143,23 @@ DATA_DIR=data
 
 LLM_PROVIDER=openai
 OPENAI_API_KEY=<secret>
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MODEL=gpt-5.5
+OPENAI_REASONING_EFFORT=medium
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 
 AUTH_ENABLED=true
-AUTH_USERNAME=clientdemo
-AUTH_PASSWORD=<secret>
+AUTH_SESSION_COOKIE_NAME=ca_agent_session
+AUTH_SESSION_TTL_MINUTES=720
+AUTH_COOKIE_SECURE=true
 AUTH_DEFAULT_ROLE=admin
+OTP_TTL_MINUTES=10
+OTP_DEV_MODE=false
+OTP_EMAIL_FROM=no-reply@your-domain.com
+SMTP_HOST=<smtp-host-or-ses-smtp-endpoint>
+SMTP_PORT=587
+SMTP_USERNAME=<secret>
+SMTP_PASSWORD=<secret>
+SMTP_USE_TLS=true
 
 DATABASE_URL=<secret>
 AUDIT_ENABLED=true
@@ -273,7 +283,8 @@ If Session Manager is offline:
 ## Demo Security Checklist
 
 - `AUTH_ENABLED=true`.
-- Strong `AUTH_PASSWORD`.
+- `AUTH_COOKIE_SECURE=true`.
+- SMTP or SES SMTP credentials configured for OTP delivery.
 - S3 bucket is private.
 - S3 encryption is enabled.
 - RDS encryption is enabled.
@@ -285,7 +296,7 @@ If Session Manager is offline:
 
 After the demo:
 
-- Replace Basic Auth with Cognito or enterprise SSO.
+- Move email OTP to SES, Cognito, or enterprise SSO.
 - Add real user, role, and session tables in PostgreSQL.
 - Add explicit login success and login failure audit events.
 - Add full document metadata tables.

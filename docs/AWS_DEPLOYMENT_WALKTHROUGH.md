@@ -400,10 +400,10 @@ Configured app runtime variables such as:
 APP_NAME=CA Agentic AI RAG
 ENVIRONMENT=production
 LLM_PROVIDER=openai
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MODEL=gpt-5.5
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 AUTH_ENABLED=true
-AUTH_USERNAME=clientdemo
+AUTH_SESSION_COOKIE_NAME=ca_agent_session
 AUTH_DEFAULT_ROLE=admin
 DATABASE_URL=<PostgreSQL connection string>
 AUDIT_ENABLED=true
@@ -416,7 +416,7 @@ RAG_LEARNING_ENABLED=true
 RAG_LEARNING_DEFAULT_CONSENT=false
 ```
 
-Secret values such as `OPENAI_API_KEY`, `AUTH_PASSWORD`, and the database password were entered during deployment and should remain secret.
+Secret values such as `OPENAI_API_KEY`, SMTP credentials, and the database password were entered during deployment and should remain secret.
 
 ## Issues Found and Fixed
 
@@ -520,19 +520,20 @@ Instance state: Running
 Status checks: 3/3 passed
 ```
 
-## How Basic Auth Behaves
+## How Email OTP Sign-In Behaves
 
-The app uses HTTP Basic Auth for the demo.
+The app uses email OTP sign-in for the public demo.
 
-When a user logs in once, the browser can cache the credentials for the domain. Opening the same URL again may not show the login prompt.
+When a user enters an email address, the backend creates an OTP challenge and sends the code through the configured SMTP provider. After verification, the browser receives an HttpOnly session cookie. The signed-in email becomes the tenant boundary for uploads, learned RAG content, and audit events.
 
-To test the login prompt again:
+To test a fresh sign-in:
 
 - Use Incognito mode.
 - Use a different browser.
-- Clear saved site credentials.
+- Click sign out from the application header.
+- Clear site cookies.
 
-For broader production use, replace Basic Auth with Cognito or enterprise SSO.
+For broader production use, connect OTP delivery to Amazon SES, Cognito, or enterprise SSO.
 
 ## What Is Audited Today
 
@@ -562,7 +563,7 @@ The current POC primarily records application audit events around task processin
 
 Before a production client rollout:
 
-- Replace Basic Auth with Cognito or enterprise SSO.
+- Move email OTP to SES, Cognito, or enterprise SSO.
 - Store secrets in AWS Secrets Manager or SSM Parameter Store.
 - Add explicit activity logging for login, upload, and analysis lifecycle events.
 - Add HTTPS custom domain using ACM and CloudFront or an Application Load Balancer.

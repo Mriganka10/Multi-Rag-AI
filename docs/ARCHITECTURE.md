@@ -149,7 +149,7 @@ User input
     -> Human-readable client response
 ```
 
-When `LLM_PROVIDER=openai`, the service calls the configured OpenAI model from `OPENAI_MODEL`, currently `gpt-4.1-mini` in `.env.example`. The OpenAI prompt receives:
+When `LLM_PROVIDER=openai`, the service calls the configured OpenAI model from `OPENAI_MODEL`, currently `gpt-5.5` in `.env.example`. The OpenAI prompt receives:
 
 - User query.
 - Selected agent name.
@@ -182,7 +182,7 @@ The API response includes diagnostic headers:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -302,7 +302,7 @@ The easiest way to confirm whether OpenAI was used is to inspect the response he
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 

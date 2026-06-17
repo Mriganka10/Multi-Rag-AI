@@ -8,7 +8,63 @@
   </head>
   <body>
     <div class="app-shell">
-      <main class="workspace">
+      <main class="auth-screen" id="authScreen">
+        <section class="auth-brand-panel" aria-label="Product overview">
+          <div class="brand-lockup">
+            <div class="brand-mark">CA</div>
+            <div>
+              <p class="eyebrow">Secure CA Intelligence Workspace</p>
+              <h1>CA Agentic AI RAG</h1>
+            </div>
+          </div>
+          <div class="auth-copy">
+            <h2>Private analysis for notices, statements, reports, and ITR preparation.</h2>
+            <p>
+              Sign in with your email OTP to open a fresh, isolated workspace for your engagement.
+            </p>
+          </div>
+          <div class="assurance-grid">
+            <div>
+              <span>01</span>
+              <strong>Tenant isolated</strong>
+              <p>Each signed-in email receives a separate session and audit trail.</p>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>CA review ready</strong>
+              <p>Outputs stay draft-oriented with clear review caveats.</p>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>RAG grounded</strong>
+              <p>Agent responses can use tax, GST, accounting, and client-approved context.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="auth-card" aria-label="Sign in">
+          <p class="eyebrow">Client sign in</p>
+          <h2>Enter your work email</h2>
+          <p class="auth-hint">We will send a one-time password to verify access.</p>
+
+          <form id="otpRequestForm" class="auth-form">
+            <label for="emailInput">Email address</label>
+            <input id="emailInput" type="email" autocomplete="email" required />
+            <button type="submit" class="primary-button full-width">Send OTP</button>
+          </form>
+
+          <form id="otpVerifyForm" class="auth-form" hidden>
+            <label for="otpInput">One-time password</label>
+            <input id="otpInput" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required />
+            <button type="submit" class="primary-button full-width">Verify and continue</button>
+            <button type="button" class="link-button" id="changeEmailButton">Use a different email</button>
+          </form>
+
+          <div class="auth-status" id="authStatus" aria-live="polite"></div>
+        </section>
+      </main>
+
+      <main class="workspace" id="workspace" hidden>
         <header class="workspace-header">
           <div class="brand-block">
             <div class="brand-mark">CA</div>
@@ -18,21 +74,23 @@
             </div>
           </div>
           <div class="header-actions">
+            <span class="user-pill" id="userEmail"></span>
             <a href="/docs">API docs</a>
             <a href="/openapi.json">OpenAPI JSON</a>
             <div class="status-pill" id="healthStatus">Checking API</div>
+            <button type="button" class="secondary-button slim" id="signOutButton">Sign out</button>
           </div>
         </header>
 
         <section class="workspace-controls" aria-label="Analysis controls">
-          <div class="field-group">
-            <label for="tenantId">Client / engagement</label>
-            <input id="tenantId" type="text" value="default" maxlength="64" />
+          <div class="workspace-title">
+            <p class="eyebrow">Professional CA workspace</p>
+            <h2>Analyze client documents with specialist agents</h2>
           </div>
 
           <div class="control-row">
             <input id="learningConsent" type="checkbox" />
-            <label for="learningConsent">Allow learning</label>
+            <label for="learningConsent">Allow learning for this signed-in client</label>
           </div>
 
           <div class="control-row">
@@ -41,26 +99,14 @@
           </div>
         </section>
 
-        <section class="intro-panel">
-          <div class="intro-content">
-            <p class="eyebrow">Multi-agent assistant</p>
-            <h2>Ask for CA workflow analysis</h2>
-            <p>
-              Upload a notice, bank statement, financial data file, or paste text below. The backend
-              will route the request to the relevant agent and return a client-readable response.
-            </p>
-          </div>
+        <section class="capability-strip" aria-label="Supported workflows">
+          <div><strong>SCN replies</strong><span>GST and tax notice analysis</span></div>
+          <div><strong>Bank statements</strong><span>Cash, EMI, interest, high-value checks</span></div>
+          <div><strong>Financials</strong><span>Ratios, anomalies, review observations</span></div>
+          <div><strong>ITR prep</strong><span>Draft income and deduction review</span></div>
         </section>
 
-        <section class="conversation" id="conversation" aria-live="polite">
-          <article class="message assistant-message">
-            <div class="message-label">Assistant</div>
-            <div class="message-body">
-              Start with a prompt or attach a file. The selected agent will be shown above the
-              response once analysis completes.
-            </div>
-          </article>
-        </section>
+        <section class="conversation" id="conversation" aria-live="polite"></section>
 
         <form class="composer" id="analysisForm">
           <div class="attachment-bar" id="attachmentBar" hidden>
