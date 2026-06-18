@@ -1,6 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -45,6 +45,13 @@ class TextAnalysisRequest(BaseModel):
     approve_learning: bool = Field(
         default=False,
         description="Set true only after CA approval. Approved notes become retrievable RAG context.",
+    )
+    output_formats: list[Literal["pdf", "docx", "xlsx"]] = Field(
+        default_factory=list,
+        description=(
+            "Optional response document formats. Formats mentioned in the query are also detected "
+            "automatically."
+        ),
     )
 
     model_config = ConfigDict(

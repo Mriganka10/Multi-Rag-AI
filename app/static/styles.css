@@ -452,6 +452,29 @@ button {
   font-size: 12px;
 }
 
+.artifact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.artifact-link {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.artifact-link:hover {
+  color: #ffffff;
+  background: var(--accent);
+}
+
 .composer {
   position: fixed;
   z-index: 30;
@@ -515,6 +538,25 @@ button {
   justify-content: flex-end;
   gap: 10px;
   align-items: center;
+}
+
+.format-control {
+  display: flex;
+  margin-right: auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.format-control select {
+  min-width: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 32px 9px 10px;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .primary-button,

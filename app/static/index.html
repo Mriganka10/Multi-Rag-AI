@@ -123,6 +123,16 @@
           ></textarea>
 
           <div class="composer-actions">
+            <label class="format-control" for="outputFormat">
+              <span>Response file</span>
+              <select id="outputFormat">
+                <option value="">Auto from prompt</option>
+                <option value="pdf">PDF</option>
+                <option value="docx">Word</option>
+                <option value="xlsx">Excel</option>
+                <option value="pdf,docx,xlsx">All formats</option>
+              </select>
+            </label>
             <input
               id="fileInput"
               type="file"

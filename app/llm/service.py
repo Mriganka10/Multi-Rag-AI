@@ -61,6 +61,8 @@ class LLMService:
                         "Give clear, professional, client-readable analysis in plain text. "
                         "Use concise headings, spacing, and bullets where useful. "
                         "Never return JSON, raw dictionaries, or developer payloads to the client. "
+                        "Do not say that you cannot attach, create, export, or provide a file. "
+                        "The application creates requested PDF, Word, and Excel artifacts separately. "
                         "Do not claim that a tax filing, notice response, or legal position is final. "
                         "Mention that CA review is required where relevant."
                     ),

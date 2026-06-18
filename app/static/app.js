@@ -17,6 +17,7 @@ const removeFileButton = document.querySelector("#removeFile");
 const attachmentBar = document.querySelector("#attachmentBar");
 const attachmentName = document.querySelector("#attachmentName");
 const submitButton = document.querySelector("#submitButton");
+const outputFormat = document.querySelector("#outputFormat");
 const conversation = document.querySelector("#conversation");
 const learningConsent = document.querySelector("#learningConsent");
 const approveLearning = document.querySelector("#approveLearning");
@@ -52,6 +53,7 @@ function renderFreshWorkspace(user) {
   workspace.hidden = false;
   promptInput.value = "";
   fileInput.value = "";
+  outputFormat.value = "";
   learningConsent.checked = false;
   approveLearning.checked = false;
   updateAttachment();
@@ -144,7 +146,7 @@ async function signOut() {
   showSignIn();
 }
 
-function addMessage(role, text, meta = [], agent = "") {
+function addMessage(role, text, meta = [], agent = "", artifacts = []) {
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
 
@@ -176,6 +178,20 @@ function addMessage(role, text, meta = [], agent = "") {
       metaRow.append(chip);
     }
     article.append(metaRow);
+  }
+
+  if (artifacts.length > 0) {
+    const artifactRow = document.createElement("div");
+    artifactRow.className = "artifact-row";
+    for (const artifact of artifacts) {
+      const link = document.createElement("a");
+      link.className = "artifact-link";
+      link.href = artifact.url;
+      link.textContent = artifact.label;
+      link.download = artifact.filename;
+      artifactRow.append(link);
+    }
+    article.append(artifactRow);
   }
 
   conversation.append(article);
@@ -220,6 +236,7 @@ async function analyzeText(prompt) {
       text: prompt,
       learning_consent: learningConsent.checked,
       approve_learning: approveLearning.checked,
+      output_formats: selectedOutputFormats(),
     }),
   });
 }
@@ -230,6 +247,7 @@ async function analyzeFile(prompt, file) {
   formData.append("file", file);
   formData.append("learning_consent", String(learningConsent.checked));
   formData.append("approve_learning", String(approveLearning.checked));
+  formData.append("output_formats", outputFormat.value);
 
   return fetch("/api/v1/tasks/analyze-file", {
     method: "POST",
@@ -264,6 +282,23 @@ function responseAgent(response) {
   return response.headers.get("x-agent-selected") || "";
 }
 
+function selectedOutputFormats() {
+  return outputFormat.value ? outputFormat.value.split(",") : [];
+}
+
+function responseArtifacts(response) {
+  const encoded = response.headers.get("x-generated-artifacts");
+  if (!encoded) {
+    return [];
+  }
+  try {
+    const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
+    return JSON.parse(atob(padded.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return [];
+  }
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
 
@@ -287,6 +322,7 @@ async function handleSubmit(event) {
     const text = await response.text();
     const meta = responseMeta(response);
     const agent = responseAgent(response);
+    const artifacts = responseArtifacts(response);
 
     if (response.status === 401) {
       showSignIn();
@@ -297,7 +333,7 @@ async function handleSubmit(event) {
       return;
     }
 
-    addMessage("assistant", text, meta, agent);
+    addMessage("assistant", text, meta, agent, artifacts);
   } catch (error) {
     addMessage(
       "assistant",

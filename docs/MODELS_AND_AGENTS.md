@@ -122,13 +122,14 @@ Uploaded PDF, CSV, XLS, XLSX, or TXT bank statement
 Current route:
 
 ```text
-analyze-file -> OCRAgent/extraction -> AgentOrchestrator -> BankStatementAgent -> Multi-RAG -> OpenAI gpt-5.5 -> plain text response
+analyze-file -> OCRAgent/extraction -> AgentOrchestrator -> BankStatementAgent -> Multi-RAG -> OpenAI gpt-5.5 -> plain text response -> requested document exports
 ```
 
 Why bank statement agent is selected:
 
 - Query or extracted text contains bank terms such as `bank`, `statement`, `debit`, `credit`, or `balance`.
 - Parsed transaction rows are converted into bank analysis and Excel artifacts when possible.
+- The final response can also be exported as PDF, Word, Excel, or all three formats.
 
 ## Response Verification
 

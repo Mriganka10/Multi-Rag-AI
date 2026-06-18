@@ -208,4 +208,6 @@ Expected:
 
 - Response content type should be `text/plain`.
 - Response should contain a human-readable analysis.
-- Excel artifacts are still generated internally under `data/outputs` when transaction rows are detected.
+- If PDF, Word, or Excel is requested, the response contains authenticated artifact links.
+- The web UI shows `Download PDF`, `Download Word`, or `Download Excel` buttons.
+- Generated artifacts remain tenant-scoped and require the same signed-in tenant to download.

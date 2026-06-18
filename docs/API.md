@@ -43,7 +43,8 @@ Request body:
   "text": "Show Cause Notice under section 73...",
   "tenant_id": "demo-client",
   "learning_consent": true,
-  "approve_learning": false
+  "approve_learning": false,
+  "output_formats": ["pdf", "docx", "xlsx"]
 }
 ```
 
@@ -114,6 +115,21 @@ X-LLM-Fallback: false
 
 These headers confirm whether the final response came from OpenAI or from offline local mode.
 
+To request a generated response document, either mention the format in the query or provide
+`output_formats`. Supported values are `pdf`, `docx`, and `xlsx`.
+
+```json
+{
+  "query": "Analyze this notice and provide the response as PDF and Word",
+  "text": "Show Cause Notice under section 73...",
+  "output_formats": ["pdf", "docx"]
+}
+```
+
+When documents are generated, the plain-text response contains authenticated download paths and
+the `X-Generated-Artifacts` response header contains a Base64 URL-encoded JSON manifest used by
+the web UI.
+
 ## Analyze File
 
 ```http
@@ -129,6 +145,7 @@ Form fields:
 - `tenant_id`: client or engagement identifier for tenant-scoped RAG learning
 - `learning_consent`: `true` only when the client/engagement opted into learning
 - `approve_learning`: `true` only after CA approval; approved notes become retrievable RAG context
+- `output_formats`: optional comma-separated formats such as `pdf,docx,xlsx`
 
 Example:
 
@@ -138,11 +155,21 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
   -F "tenant_id=demo-client" \
   -F "learning_consent=true" \
   -F "approve_learning=false" \
+  -F "output_formats=pdf,docx" \
   -F "file=@examples/sample_bank_statement.txt"
 ```
 
-When transaction rows are detected, the API still writes an Excel artifact under `data/outputs`.
-The API response itself is now plain human-readable text for the client-facing POC.
+When a requested response document is generated, it is stored under the signed-in tenant. In AWS,
+the encrypted artifact is uploaded to the private S3 bucket and its metadata is registered in
+PostgreSQL. Downloads require a valid session for the same tenant.
+
+Natural-language format detection is also supported:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/tasks/analyze-file \
+  -F "query=Analyze this notice and provide a PDF response" \
+  -F "file=@examples/sample_scn.txt"
+```
 
 The response headers still identify the final response provider and model:
 
@@ -150,7 +177,17 @@ The response headers still identify the final response provider and model:
 X-LLM-Provider: openai
 X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
+X-Generated-Artifacts: <base64url artifact manifest>
 ```
+
+## Download Generated Artifact
+
+```http
+GET /api/v1/artifacts/{artifact_id}/download
+```
+
+This endpoint requires the same authenticated browser session or API cookie that created the
+analysis. A client receives `404` when the artifact belongs to another tenant.
 
 Bank statement upload samples:
 
@@ -227,7 +264,9 @@ Response:
 
 ## Client Response Contract
 
-The analysis endpoints return `text/plain`, not the internal developer JSON envelope.
+The analysis endpoints return `text/plain`, not the internal developer JSON envelope. Generated
+document links are appended under `Generated Documents`, while the web UI renders dedicated
+download buttons.
 
 The internal structured result is still used by the orchestrator for agent routing, RAG context retrieval,
 artifact creation, audit logs, and learning controls.

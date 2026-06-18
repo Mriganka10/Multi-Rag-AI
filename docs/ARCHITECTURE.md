@@ -197,9 +197,29 @@ If `LLM_PROVIDER=offline`, the deterministic response builder is used for local 
 5. Specialist agent performs deterministic domain analysis.
 6. RAG context is retrieved for the selected agent and tenant.
 7. OpenAI receives the internal analysis, RAG context, and source excerpt.
-8. API returns the OpenAI-generated human-readable report as `text/plain`.
+8. The export service detects requested PDF, Word, or Excel formats.
+9. Requested response documents are generated and stored under the signed-in tenant.
+10. API returns the OpenAI-generated report as `text/plain` with authenticated artifact links.
 
 The internal `TaskResult` still contains `summary`, `data`, `contexts`, `artifacts`, `llm`, and `requires_human_review`, but that object is not exposed as the client-facing response.
+
+## Generated Response Documents
+
+`app/artifacts/service.py` converts the final client-facing response into:
+
+- PDF using ReportLab.
+- Word `.docx` using python-docx.
+- Excel `.xlsx` using openpyxl.
+
+Formats can be selected explicitly in the UI/API or detected from phrases such as `provide a PDF`,
+`export to Word`, or `give this in Excel`.
+
+Generated files use a UUID artifact identifier and tenant-specific path. In AWS:
+
+- The file is encrypted and stored under the tenant's S3 artifact prefix.
+- Artifact metadata is stored in the PostgreSQL `generated_artifacts` table.
+- `GET /api/v1/artifacts/{artifact_id}/download` verifies the signed-in tenant before streaming it.
+- Another tenant receives `404`, preventing artifact enumeration or cross-client access.
 
 ### Step 5: Deterministic Domain Analysis
 
