@@ -76,7 +76,9 @@ class ArtifactExportService:
         if not formats:
             return []
 
-        title = _document_title(agent_name)
+        fallback_title = _document_title(agent_name)
+        title = _response_title(content) or fallback_title
+        blocks = _content_blocks(content, document_title=title)
         artifacts: list[GeneratedArtifact] = []
         for output_format in formats:
             artifact_id = uuid4().hex
@@ -90,11 +92,11 @@ class ArtifactExportService:
             filename = f"{_slug(title)}-{artifact_id[:8]}.{output_format}"
             local_path = output_dir / filename
             if output_format == "pdf":
-                _write_pdf(local_path, title, content)
+                _write_pdf(local_path, title, blocks)
             elif output_format == "docx":
-                _write_docx(local_path, title, content)
+                _write_docx(local_path, title, blocks)
             else:
-                _write_xlsx(local_path, title, agent_name, content)
+                _write_xlsx(local_path, title, agent_name, content, blocks)
 
             location = self.storage.persist_artifact(
                 local_path=local_path,
@@ -193,7 +195,7 @@ class ArtifactExportService:
                 return cur.fetchall()
 
 
-def _write_pdf(path: Path, title: str, content: str) -> None:
+def _write_pdf(path: Path, title: str, blocks: list[tuple[str, str]]) -> None:
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
@@ -237,6 +239,14 @@ def _write_pdf(path: Path, title: str, content: str) -> None:
         leftIndent=12,
         firstLineIndent=-7,
     )
+    metadata_style = ParagraphStyle(
+        "CAExportMetadata",
+        parent=body_style,
+        fontSize=9.5,
+        leading=13,
+        leftIndent=0,
+        spaceAfter=3,
+    )
 
     document = SimpleDocTemplate(
         str(path),
@@ -249,7 +259,7 @@ def _write_pdf(path: Path, title: str, content: str) -> None:
         author=settings.app_name,
     )
     story = [Paragraph(escape(title), title_style), Spacer(1, 4)]
-    for kind, value in _content_blocks(content):
+    for kind, value in blocks:
         safe_value = escape(_pdf_safe(value)).replace("\n", "<br/>")
         if kind == "heading":
             story.append(Paragraph(safe_value, heading_style))
@@ -257,6 +267,15 @@ def _write_pdf(path: Path, title: str, content: str) -> None:
             story.append(Paragraph(f"- {safe_value}", bullet_style))
         elif kind == "numbered":
             story.append(Paragraph(safe_value, bullet_style))
+        elif kind == "metadata":
+            label, metadata_value = _split_metadata(value)
+            story.append(
+                Paragraph(
+                    f"<b>{escape(_pdf_safe(label))}:</b> "
+                    f"{escape(_pdf_safe(metadata_value))}",
+                    metadata_style,
+                )
+            )
         elif kind == "page_break":
             story.append(PageBreak())
         else:
@@ -264,7 +283,7 @@ def _write_pdf(path: Path, title: str, content: str) -> None:
     document.build(story)
 
 
-def _write_docx(path: Path, title: str, content: str) -> None:
+def _write_docx(path: Path, title: str, blocks: list[tuple[str, str]]) -> None:
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Inches, Pt, RGBColor
@@ -284,7 +303,7 @@ def _write_docx(path: Path, title: str, content: str) -> None:
     title_run.font.size = Pt(18)
     title_run.font.color.rgb = RGBColor(15, 79, 69)
 
-    for kind, value in _content_blocks(content):
+    for kind, value in blocks:
         if kind == "heading":
             paragraph = document.add_paragraph()
             run = paragraph.add_run(value)
@@ -298,6 +317,12 @@ def _write_docx(path: Path, title: str, content: str) -> None:
         elif kind == "numbered":
             paragraph = document.add_paragraph(style="List Number")
             paragraph.add_run(re.sub(r"^\d+\.\s+", "", value))
+        elif kind == "metadata":
+            label, metadata_value = _split_metadata(value)
+            paragraph = document.add_paragraph()
+            label_run = paragraph.add_run(f"{label}: ")
+            label_run.bold = True
+            paragraph.add_run(metadata_value)
         elif kind == "page_break":
             document.add_page_break()
         else:
@@ -316,7 +341,13 @@ def _write_docx(path: Path, title: str, content: str) -> None:
     document.save(path)
 
 
-def _write_xlsx(path: Path, title: str, agent_name: str, content: str) -> None:
+def _write_xlsx(
+    path: Path,
+    title: str,
+    agent_name: str,
+    content: str,
+    blocks: list[tuple[str, str]],
+) -> None:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
 
@@ -326,21 +357,29 @@ def _write_xlsx(path: Path, title: str, agent_name: str, content: str) -> None:
     summary.sheet_view.showGridLines = False
     summary["A1"] = title
     summary["A1"].font = Font(size=18, bold=True, color="0F4F45")
+    metadata = [value for kind, value in blocks if kind == "metadata"]
     summary["A3"] = "Agent"
     summary["B3"] = agent_name
     summary["A4"] = "Generated"
     summary["B4"] = datetime.now(UTC).strftime("%d %b %Y %H:%M UTC")
-    summary["A6"] = "Client-ready analysis"
-    summary["A6"].font = Font(size=12, bold=True, color="176B5D")
-    summary["A7"] = content
-    summary["A7"].alignment = Alignment(wrap_text=True, vertical="top")
-    summary.merge_cells("A7:H40")
-    summary.row_dimensions[7].height = 420
+    next_row = 5
+    for value in metadata:
+        label, metadata_value = _split_metadata(value)
+        summary.cell(next_row, 1, label)
+        summary.cell(next_row, 2, metadata_value)
+        next_row += 1
+    summary.cell(next_row + 1, 1, "Client-ready analysis")
+    summary.cell(next_row + 1, 1).font = Font(size=12, bold=True, color="176B5D")
+    content_row = next_row + 2
+    summary.cell(content_row, 1, content)
+    summary.cell(content_row, 1).alignment = Alignment(wrap_text=True, vertical="top")
+    summary.merge_cells(start_row=content_row, start_column=1, end_row=content_row + 33, end_column=8)
+    summary.row_dimensions[content_row].height = 420
     for column in "ABCDEFGH":
         summary.column_dimensions[column].width = 16
-    for cell in ("A3", "A4"):
-        summary[cell].font = Font(bold=True)
-        summary[cell].fill = PatternFill("solid", fgColor="DFF3EE")
+    for row_number in range(3, next_row):
+        summary.cell(row_number, 1).font = Font(bold=True)
+        summary.cell(row_number, 1).fill = PatternFill("solid", fgColor="DFF3EE")
 
     detail = workbook.create_sheet("Structured Response")
     detail.sheet_view.showGridLines = False
@@ -348,7 +387,7 @@ def _write_xlsx(path: Path, title: str, agent_name: str, content: str) -> None:
     for cell in detail[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="176B5D")
-    for kind, value in _content_blocks(content):
+    for kind, value in blocks:
         if kind != "page_break":
             detail.append([kind.replace("_", " ").title(), value])
     detail.freeze_panes = "A2"
@@ -360,7 +399,11 @@ def _write_xlsx(path: Path, title: str, agent_name: str, content: str) -> None:
     workbook.save(path)
 
 
-def _content_blocks(content: str) -> list[tuple[str, str]]:
+def _content_blocks(
+    content: str,
+    *,
+    document_title: str | None = None,
+) -> list[tuple[str, str]]:
     blocks: list[tuple[str, str]] = []
     paragraph_lines: list[str] = []
 
@@ -379,9 +422,15 @@ def _content_blocks(content: str) -> list[tuple[str, str]]:
             continue
         heading = re.sub(r"^\s*#{1,6}\s*", "", line)
         heading = re.sub(r"^\*\*(.+)\*\*$", r"\1", heading)
+        if document_title and _normalized_text(heading) == _normalized_text(document_title):
+            flush_paragraph()
+            continue
+        if _is_metadata_line(line):
+            flush_paragraph()
+            blocks.append(("metadata", line))
+            continue
         numbered_line = bool(re.match(r"^\d+\.\s+\S", line))
-        numbered_heading = numbered_line and len(line) <= 80
-        plain_heading = heading.lower().rstrip(":") in {
+        heading_labels = {
             "analysis report",
             "summary",
             "key observations",
@@ -393,6 +442,9 @@ def _content_blocks(content: str) -> list[tuple[str, str]]:
             "relevant context retrieved",
             "prayer",
         }
+        plain_heading = heading.lower().rstrip(":") in heading_labels
+        numbered_heading_text = re.sub(r"^\d+\.\s+", "", heading).lower().rstrip(":")
+        numbered_heading = numbered_line and numbered_heading_text in heading_labels
         if line.startswith("#") or numbered_heading or (
             line.startswith("**") and line.endswith("**")
         ) or plain_heading:
@@ -408,6 +460,51 @@ def _content_blocks(content: str) -> list[tuple[str, str]]:
             paragraph_lines.append(re.sub(r"\*\*(.+?)\*\*", r"\1", line))
     flush_paragraph()
     return blocks
+
+
+def _response_title(content: str) -> str | None:
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if not lines:
+        return None
+    candidate = re.sub(r"^\s*#{1,6}\s*", "", lines[0])
+    candidate = re.sub(r"^\*\*(.+)\*\*$", r"\1", candidate).strip()
+    if _is_metadata_line(candidate) or len(candidate) > 140:
+        return None
+    if re.fullmatch(r"[-=_]{3,}", candidate):
+        return None
+    return candidate
+
+
+def _is_metadata_line(value: str) -> bool:
+    match = re.match(r"^([A-Za-z][A-Za-z /&().-]{1,40}):\s*(\S.*)$", value)
+    if not match:
+        return False
+    label = match.group(1).strip().lower()
+    return label in {
+        "assessment year",
+        "taxpayer",
+        "name of taxpayer",
+        "pan",
+        "notice date",
+        "din",
+        "proceeding",
+        "main issue",
+        "notice type",
+        "financial year",
+        "period",
+        "entity",
+        "client",
+        "subject",
+    }
+
+
+def _split_metadata(value: str) -> tuple[str, str]:
+    label, metadata_value = value.split(":", 1)
+    return label.strip(), metadata_value.strip()
+
+
+def _normalized_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().lower()
 
 
 def _document_title(agent_name: str) -> str:
