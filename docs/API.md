@@ -288,3 +288,13 @@ Learning is controlled by three request fields:
 If `learning_consent=true` and `approve_learning=false`, the note is stored under a pending folder and audit logged, but future RAG retrieval will not use it.
 
 If both are `true`, the note is stored under the tenant's approved folder and can be retrieved in future prompts for that same tenant.
+
+In AWS, inspect persistent learning metadata with:
+
+```sql
+select learning_id, tenant_id, status, agent, storage_location,
+       approved_by, qdrant_collection, qdrant_point_id,
+       indexing_status, indexing_error, created_at, approved_at
+from rag_learning_records
+order by created_at desc;
+```

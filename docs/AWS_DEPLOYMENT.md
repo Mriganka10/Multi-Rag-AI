@@ -174,7 +174,27 @@ RAG_LEARNING_ENABLED=true
 RAG_LEARNING_DEFAULT_CONSENT=false
 ```
 
-For the first public demo, `RAG_PROVIDER=local` is acceptable. Move to Qdrant after the basic deployment is stable.
+Persistent learning uses the existing private S3 bucket:
+
+```text
+s3://ca-agentic-ai-prod-uploads-453732174568-ap-south-1/
+  ca-agentic-ai/tenants/<tenant-id>/rag/pending/<learning-id>.txt
+  ca-agentic-ai/tenants/<tenant-id>/rag/approved/<learning-id>.txt
+```
+
+PostgreSQL automatically creates `rag_learning_records` on the first consented learning request.
+To activate approved-vector indexing and retrieval, configure:
+
+```env
+RAG_PROVIDER=qdrant
+QDRANT_URL=https://<cluster>.<region>.cloud.qdrant.io
+QDRANT_API_KEY=<secret>
+QDRANT_COLLECTION_PREFIX=ca
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+```
+
+Without Qdrant credentials, S3 and PostgreSQL persistence still works, and approved records are
+marked `indexing_status=not_configured`.
 
 ## Deployment Steps
 

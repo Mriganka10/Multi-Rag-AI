@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from app.core.config import settings
 from app.models.schemas import RetrievedContext
+from app.rag.learning import qdrant_collection_name
 
 
 @dataclass(frozen=True)
@@ -111,17 +112,18 @@ class MultiRAG:
             "notifications",
         ]
         for collection in collection_names:
-            qdrant_collection = f"{settings.qdrant_collection_prefix}_{collection}"
+            qdrant_collection = qdrant_collection_name(collection)
             try:
-                hits = qdrant_client.search(
+                response = qdrant_client.query_points(
                     collection_name=qdrant_collection,
-                    query_vector=query_vector,
+                    query=query_vector,
                     limit=top_k,
+                    with_payload=True,
                 )
             except Exception:
                 continue
 
-            for hit in hits:
+            for hit in response.points:
                 payload = hit.payload or {}
                 text = str(payload.get("text", ""))
                 if not text:

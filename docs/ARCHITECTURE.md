@@ -349,3 +349,27 @@ Recommended production upgrades:
 - Add PostgreSQL for clients, jobs, document metadata, review status, and audit trail.
 - Add background workers for large document processing.
 - Add human approval workflow before any tax filing or notice submission.
+
+## Persistent RAG Learning
+
+The deployed learning pipeline separates responsibilities:
+
+- **S3:** encrypted source of record for pending and approved learned responses.
+- **PostgreSQL:** `rag_learning_records` approval, integrity, storage, and indexing metadata.
+- **Qdrant:** embeddings for approved records only, isolated by tenant collection.
+
+S3 hierarchy:
+
+```text
+<S3_PREFIX>/tenants/<tenant-id>/rag/pending/<learning-id>.txt
+<S3_PREFIX>/tenants/<tenant-id>/rag/approved/<learning-id>.txt
+```
+
+Qdrant collection:
+
+```text
+<QDRANT_COLLECTION_PREFIX>_learned_<tenant-id>
+```
+
+Pending material is never indexed. If Qdrant is not configured, S3 and PostgreSQL persistence
+still succeeds and the metadata records `indexing_status=not_configured`.

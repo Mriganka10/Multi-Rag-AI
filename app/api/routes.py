@@ -90,6 +90,7 @@ def analyze_text(payload: TextAnalysisRequest, request: Request) -> PlainTextRes
                 tenant_id=tenant_id,
                 learning_consent=payload.learning_consent,
                 approve_learning=payload.approve_learning,
+                approved_by=current_user.username if payload.approve_learning else None,
             ),
         )
         artifacts = artifact_export_service.generate(
@@ -117,6 +118,7 @@ def analyze_text(payload: TextAnalysisRequest, request: Request) -> PlainTextRes
             "llm": result.llm,
             "learning_approved": payload.approve_learning,
             "learning_consent": payload.learning_consent,
+            "learning": result.data.get("learning"),
             "generated_artifacts": [artifact.format for artifact in artifacts],
         },
     )
@@ -153,6 +155,7 @@ async def analyze_file(
                 tenant_id=safe_tenant,
                 learning_consent=learning_consent,
                 approve_learning=approve_learning,
+                approved_by=current_user.username if approve_learning else None,
             ),
         )
         artifacts = artifact_export_service.generate(
@@ -188,6 +191,7 @@ async def analyze_file(
             "llm": result.llm,
             "learning_approved": approve_learning,
             "learning_consent": learning_consent,
+            "learning": result.data.get("learning"),
             "generated_artifacts": [artifact.format for artifact in artifacts],
         },
     )

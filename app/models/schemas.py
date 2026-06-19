@@ -99,6 +99,7 @@ class LearningOptions(BaseModel):
     tenant_id: str = "default"
     learning_consent: bool = False
     approve_learning: bool = False
+    approved_by: str | None = None
 
     @field_validator("tenant_id")
     @classmethod
