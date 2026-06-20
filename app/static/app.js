@@ -1,3 +1,14 @@
+const authScreen = document.querySelector("#authScreen");
+const workspace = document.querySelector("#workspace");
+const otpRequestForm = document.querySelector("#otpRequestForm");
+const otpVerifyForm = document.querySelector("#otpVerifyForm");
+const emailInput = document.querySelector("#emailInput");
+const otpInput = document.querySelector("#otpInput");
+const changeEmailButton = document.querySelector("#changeEmailButton");
+const authStatus = document.querySelector("#authStatus");
+const userEmail = document.querySelector("#userEmail");
+const signOutButton = document.querySelector("#signOutButton");
+
 const form = document.querySelector("#analysisForm");
 const promptInput = document.querySelector("#promptInput");
 const fileInput = document.querySelector("#fileInput");
@@ -6,37 +17,13 @@ const removeFileButton = document.querySelector("#removeFile");
 const attachmentBar = document.querySelector("#attachmentBar");
 const attachmentName = document.querySelector("#attachmentName");
 const submitButton = document.querySelector("#submitButton");
+const outputFormat = document.querySelector("#outputFormat");
 const conversation = document.querySelector("#conversation");
-const tenantId = document.querySelector("#tenantId");
 const learningConsent = document.querySelector("#learningConsent");
 const approveLearning = document.querySelector("#approveLearning");
 const healthStatus = document.querySelector("#healthStatus");
 
-const examples = {
-  scn: `Analyze this GST show cause notice and draft a professional reply.
-
-Show Cause Notice under section 73 of the CGST Act.
-It is alleged that input tax credit of INR 250000 was wrongly availed due to mismatch between GSTR-2B and GSTR-3B for FY 2024-25.
-The taxpayer is required to explain why tax, interest and penalty should not be recovered.`,
-  bank: `Analyze this bank statement and highlight cash deposits, interest, EMI, and high-value transactions.
-
-2026-04-03 Cash Deposit 0 150000 400000
-2026-04-07 Vendor Payment 85000 0 315000
-2026-04-11 Interest Credit 0 3500 318500
-2026-04-15 Loan EMI 45000 0 273500
-2026-04-20 High Value Receipt 0 250000 523500`,
-  financial: `Analyze financial statement ratios and anomalies.
-
-Current Assets 500000
-Current Liabilities 250000
-Inventory 100000
-Total Debt 800000
-Equity 300000
-Revenue 1200000
-Net Profit 180000
-Total Assets 1000000
-Total Liabilities 650000`,
-};
+let pendingEmail = "";
 
 function setHealth(status, text) {
   healthStatus.className = `status-pill ${status}`;
@@ -55,7 +42,111 @@ async function checkHealth() {
   }
 }
 
-function addMessage(role, text, meta = [], agent = "") {
+function setAuthStatus(text, state = "") {
+  authStatus.textContent = text;
+  authStatus.className = `auth-status ${state}`.trim();
+}
+
+function renderFreshWorkspace(user) {
+  userEmail.textContent = user.email;
+  authScreen.hidden = true;
+  workspace.hidden = false;
+  promptInput.value = "";
+  fileInput.value = "";
+  outputFormat.value = "";
+  learningConsent.checked = false;
+  approveLearning.checked = false;
+  updateAttachment();
+  conversation.replaceChildren();
+  addMessage(
+    "assistant",
+    "Welcome. Upload a notice, bank statement, financial report, ITR file, or write a prompt below. This workspace is fresh for your signed-in email.",
+  );
+  checkHealth();
+}
+
+function showSignIn() {
+  workspace.hidden = true;
+  authScreen.hidden = false;
+  otpRequestForm.hidden = false;
+  otpVerifyForm.hidden = true;
+  otpInput.value = "";
+  setAuthStatus("");
+  emailInput.focus();
+}
+
+async function loadSession() {
+  try {
+    const response = await fetch("/api/v1/auth/me");
+    if (!response.ok) {
+      showSignIn();
+      return;
+    }
+    const user = await response.json();
+    renderFreshWorkspace(user);
+  } catch {
+    showSignIn();
+  }
+}
+
+async function requestOtp(event) {
+  event.preventDefault();
+  const email = emailInput.value.trim().toLowerCase();
+  if (!email) {
+    emailInput.focus();
+    return;
+  }
+
+  setAuthStatus("Sending OTP...", "info");
+  const response = await fetch("/api/v1/auth/request-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    setAuthStatus(payload.detail || "Unable to send OTP.", "error");
+    return;
+  }
+
+  pendingEmail = email;
+  otpRequestForm.hidden = true;
+  otpVerifyForm.hidden = false;
+  otpInput.focus();
+  const devOtp = payload.dev_otp ? ` Development OTP: ${payload.dev_otp}` : "";
+  setAuthStatus(`OTP sent to ${email}.${devOtp}`, "success");
+}
+
+async function verifyOtp(event) {
+  event.preventDefault();
+  const otp = otpInput.value.trim();
+  if (!pendingEmail || !otp) {
+    otpInput.focus();
+    return;
+  }
+
+  setAuthStatus("Verifying OTP...", "info");
+  const response = await fetch("/api/v1/auth/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: pendingEmail, otp }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    setAuthStatus(payload.detail || "Invalid OTP.", "error");
+    return;
+  }
+
+  renderFreshWorkspace(payload);
+}
+
+async function signOut() {
+  await fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+  pendingEmail = "";
+  showSignIn();
+}
+
+function addMessage(role, text, meta = [], agent = "", artifacts = []) {
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
 
@@ -89,6 +180,20 @@ function addMessage(role, text, meta = [], agent = "") {
     article.append(metaRow);
   }
 
+  if (artifacts.length > 0) {
+    const artifactRow = document.createElement("div");
+    artifactRow.className = "artifact-row";
+    for (const artifact of artifacts) {
+      const link = document.createElement("a");
+      link.className = "artifact-link";
+      link.href = artifact.url;
+      link.textContent = artifact.label;
+      link.download = artifact.filename;
+      artifactRow.append(link);
+    }
+    article.append(artifactRow);
+  }
+
   conversation.append(article);
   window.requestAnimationFrame(() => {
     window.scrollTo({
@@ -115,10 +220,6 @@ function updateAttachment() {
   attachmentBar.hidden = false;
 }
 
-function normalizeTenant(value) {
-  return value.trim() || "default";
-}
-
 function buildUserPreview(prompt, file) {
   if (!file) {
     return prompt;
@@ -133,9 +234,9 @@ async function analyzeText(prompt) {
     body: JSON.stringify({
       query: prompt,
       text: prompt,
-      tenant_id: normalizeTenant(tenantId.value),
       learning_consent: learningConsent.checked,
       approve_learning: approveLearning.checked,
+      output_formats: selectedOutputFormats(),
     }),
   });
 }
@@ -144,9 +245,9 @@ async function analyzeFile(prompt, file) {
   const formData = new FormData();
   formData.append("query", prompt);
   formData.append("file", file);
-  formData.append("tenant_id", normalizeTenant(tenantId.value));
   formData.append("learning_consent", String(learningConsent.checked));
   formData.append("approve_learning", String(approveLearning.checked));
+  formData.append("output_formats", outputFormat.value);
 
   return fetch("/api/v1/tasks/analyze-file", {
     method: "POST",
@@ -181,6 +282,23 @@ function responseAgent(response) {
   return response.headers.get("x-agent-selected") || "";
 }
 
+function selectedOutputFormats() {
+  return outputFormat.value ? outputFormat.value.split(",") : [];
+}
+
+function responseArtifacts(response) {
+  const encoded = response.headers.get("x-generated-artifacts");
+  if (!encoded) {
+    return [];
+  }
+  try {
+    const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
+    return JSON.parse(atob(padded.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return [];
+  }
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
 
@@ -204,13 +322,18 @@ async function handleSubmit(event) {
     const text = await response.text();
     const meta = responseMeta(response);
     const agent = responseAgent(response);
+    const artifacts = responseArtifacts(response);
 
+    if (response.status === 401) {
+      showSignIn();
+      return;
+    }
     if (!response.ok) {
       addMessage("assistant", text || `Request failed with status ${response.status}`, meta, agent);
       return;
     }
 
-    addMessage("assistant", text, meta, agent);
+    addMessage("assistant", text, meta, agent, artifacts);
   } catch (error) {
     addMessage(
       "assistant",
@@ -222,6 +345,17 @@ async function handleSubmit(event) {
   }
 }
 
+otpRequestForm.addEventListener("submit", requestOtp);
+otpVerifyForm.addEventListener("submit", verifyOtp);
+changeEmailButton.addEventListener("click", () => {
+  pendingEmail = "";
+  otpVerifyForm.hidden = true;
+  otpRequestForm.hidden = false;
+  otpInput.value = "";
+  setAuthStatus("");
+  emailInput.focus();
+});
+signOutButton.addEventListener("click", signOut);
 attachButton.addEventListener("click", () => fileInput.click());
 removeFileButton.addEventListener("click", () => {
   fileInput.value = "";
@@ -230,17 +364,10 @@ removeFileButton.addEventListener("click", () => {
 fileInput.addEventListener("change", updateAttachment);
 form.addEventListener("submit", handleSubmit);
 
-document.querySelectorAll("[data-example]").forEach((button) => {
-  button.addEventListener("click", () => {
-    promptInput.value = examples[button.dataset.example] || "";
-    promptInput.focus();
-  });
-});
-
 promptInput.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
     form.requestSubmit();
   }
 });
 
-checkHealth();
+loadSession();

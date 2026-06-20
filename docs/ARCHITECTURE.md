@@ -149,7 +149,7 @@ User input
     -> Human-readable client response
 ```
 
-When `LLM_PROVIDER=openai`, the service calls the configured OpenAI model from `OPENAI_MODEL`, currently `gpt-4.1-mini` in `.env.example`. The OpenAI prompt receives:
+When `LLM_PROVIDER=openai`, the service calls the configured OpenAI model from `OPENAI_MODEL`, currently `gpt-5.5` in `.env.example`. The OpenAI prompt receives:
 
 - User query.
 - Selected agent name.
@@ -182,7 +182,7 @@ The API response includes diagnostic headers:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -197,9 +197,29 @@ If `LLM_PROVIDER=offline`, the deterministic response builder is used for local 
 5. Specialist agent performs deterministic domain analysis.
 6. RAG context is retrieved for the selected agent and tenant.
 7. OpenAI receives the internal analysis, RAG context, and source excerpt.
-8. API returns the OpenAI-generated human-readable report as `text/plain`.
+8. The export service detects requested PDF, Word, or Excel formats.
+9. Requested response documents are generated and stored under the signed-in tenant.
+10. API returns the OpenAI-generated report as `text/plain` with authenticated artifact links.
 
 The internal `TaskResult` still contains `summary`, `data`, `contexts`, `artifacts`, `llm`, and `requires_human_review`, but that object is not exposed as the client-facing response.
+
+## Generated Response Documents
+
+`app/artifacts/service.py` converts the final client-facing response into:
+
+- PDF using ReportLab.
+- Word `.docx` using python-docx.
+- Excel `.xlsx` using openpyxl.
+
+Formats can be selected explicitly in the UI/API or detected from phrases such as `provide a PDF`,
+`export to Word`, or `give this in Excel`.
+
+Generated files use a UUID artifact identifier and tenant-specific path. In AWS:
+
+- The file is encrypted and stored under the tenant's S3 artifact prefix.
+- Artifact metadata is stored in the PostgreSQL `generated_artifacts` table.
+- `GET /api/v1/artifacts/{artifact_id}/download` verifies the signed-in tenant before streaming it.
+- Another tenant receives `404`, preventing artifact enumeration or cross-client access.
 
 ### Step 5: Deterministic Domain Analysis
 
@@ -302,7 +322,7 @@ The easiest way to confirm whether OpenAI was used is to inspect the response he
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -329,3 +349,27 @@ Recommended production upgrades:
 - Add PostgreSQL for clients, jobs, document metadata, review status, and audit trail.
 - Add background workers for large document processing.
 - Add human approval workflow before any tax filing or notice submission.
+
+## Persistent RAG Learning
+
+The deployed learning pipeline separates responsibilities:
+
+- **S3:** encrypted source of record for pending and approved learned responses.
+- **PostgreSQL:** `rag_learning_records` approval, integrity, storage, and indexing metadata.
+- **Qdrant:** embeddings for approved records only, isolated by tenant collection.
+
+S3 hierarchy:
+
+```text
+<S3_PREFIX>/tenants/<tenant-id>/rag/pending/<learning-id>.txt
+<S3_PREFIX>/tenants/<tenant-id>/rag/approved/<learning-id>.txt
+```
+
+Qdrant collection:
+
+```text
+<QDRANT_COLLECTION_PREFIX>_learned_<tenant-id>
+```
+
+Pending material is never indexed. If Qdrant is not configured, S3 and PostgreSQL persistence
+still succeeds and the metadata records `indexing_status=not_configured`.

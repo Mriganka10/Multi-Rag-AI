@@ -37,7 +37,7 @@ Default mode:
 ```text
 LLM_PROVIDER=openai
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 This calls OpenAI for the final client-readable response for both text prompts and file uploads.
@@ -45,7 +45,7 @@ This calls OpenAI for the final client-readable response for both text prompts a
 The current configured model is shared by all agents. The default is:
 
 ```text
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 Install cloud dependencies:
@@ -100,7 +100,7 @@ Use response headers to confirm the model:
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -128,6 +128,27 @@ data/knowledge/learned/{tenant_id}/approved
 
 Only approved notes are loaded back into the retriever.
 
+In AWS, consented learning is persisted to the private S3 bucket:
+
+```text
+s3://<S3_BUCKET>/<S3_PREFIX>/tenants/<tenant-id>/rag/pending/<learning-id>.txt
+s3://<S3_BUCKET>/<S3_PREFIX>/tenants/<tenant-id>/rag/approved/<learning-id>.txt
+```
+
+PostgreSQL stores approval and indexing metadata in `rag_learning_records`. It records the S3
+location, content hash, approval actor, timestamps, Qdrant collection/point identifiers, and
+indexing status. The generated learning content remains in encrypted S3 storage.
+
+Approved learning is embedded with `OPENAI_EMBEDDING_MODEL` and upserted to:
+
+```text
+<QDRANT_COLLECTION_PREFIX>_learned_<tenant-id>
+```
+
+This vector indexing occurs only when `QDRANT_URL` and `OPENAI_API_KEY` are configured. If Qdrant
+is unavailable, the S3 object and PostgreSQL record remain durable and `indexing_status` records
+`not_configured` or `failed`. Pending material is never sent to Qdrant.
+
 For production, this must be controlled carefully because client documents and generated outputs may contain confidential information.
 
 Recommended production controls:
@@ -138,7 +159,7 @@ Recommended production controls:
 - Keep audit logs for what was learned and who approved it.
 - Avoid storing sensitive personal data unless strictly required.
 
-The POC writes audit events to:
+Local development writes its learning audit material under:
 
 ```text
 data/knowledge/learning_audit.jsonl
@@ -208,4 +229,6 @@ Expected:
 
 - Response content type should be `text/plain`.
 - Response should contain a human-readable analysis.
-- Excel artifacts are still generated internally under `data/outputs` when transaction rows are detected.
+- If PDF, Word, or Excel is requested, the response contains authenticated artifact links.
+- The web UI shows `Download PDF`, `Download Word`, or `Download Excel` buttons.
+- Generated artifacts remain tenant-scoped and require the same signed-in tenant to download.

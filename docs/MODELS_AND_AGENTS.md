@@ -34,13 +34,13 @@ The final response model is configured in `.env`:
 
 ```text
 LLM_PROVIDER=openai
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 The default in `.env.example` is:
 
 ```text
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 This model is used for all final client-facing responses:
@@ -102,7 +102,7 @@ It is alleged that input tax credit of INR 250000 was wrongly availed...
 Current route:
 
 ```text
-analyze-text -> AgentOrchestrator -> SCNAgent -> Multi-RAG -> OpenAI gpt-4.1-mini -> plain text response
+analyze-text -> AgentOrchestrator -> SCNAgent -> Multi-RAG -> OpenAI gpt-5.5 -> plain text response
 ```
 
 Why SCN agent is selected:
@@ -122,13 +122,14 @@ Uploaded PDF, CSV, XLS, XLSX, or TXT bank statement
 Current route:
 
 ```text
-analyze-file -> OCRAgent/extraction -> AgentOrchestrator -> BankStatementAgent -> Multi-RAG -> OpenAI gpt-4.1-mini -> plain text response
+analyze-file -> OCRAgent/extraction -> AgentOrchestrator -> BankStatementAgent -> Multi-RAG -> OpenAI gpt-5.5 -> plain text response -> requested document exports
 ```
 
 Why bank statement agent is selected:
 
 - Query or extracted text contains bank terms such as `bank`, `statement`, `debit`, `credit`, or `balance`.
 - Parsed transaction rows are converted into bank analysis and Excel artifacts when possible.
+- The final response can also be exported as PDF, Word, Excel, or all three formats.
 
 ## Response Verification
 
@@ -136,7 +137,7 @@ The API returns `text/plain`, but the response headers show which model produced
 
 ```text
 X-LLM-Provider: openai
-X-LLM-Model: gpt-4.1-mini
+X-LLM-Model: gpt-5.5
 X-LLM-Fallback: false
 ```
 
@@ -163,6 +164,6 @@ then the API is running in offline mode and is not using OpenAI.
 | Routing | Keyword rules | LangGraph supervisor or LLM classifier with confidence scoring. |
 | RAG retrieval | TF-IDF local files | Qdrant plus OpenAI embeddings and citation tracking. |
 | OCR | Local extraction and Tesseract | Cloud document intelligence with bank/notice parsers. |
-| LLM response | Shared `gpt-4.1-mini` | Configurable model policy per workflow and cost tier. |
+| LLM response | Shared `gpt-5.5` | Configurable model policy per workflow and cost tier. |
 | Learning | Tenant-scoped pending/approved files | Database-backed approval workflow with audit trail. |
 | Security | Local `.env` | Secret manager, auth, role-based tenant access, encrypted storage. |

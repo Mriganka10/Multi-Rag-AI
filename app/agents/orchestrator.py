@@ -97,14 +97,22 @@ class AgentOrchestrator:
             learning_options.learning_consent or settings.rag_learning_default_consent
         )
         if settings.rag_learning_enabled and has_learning_consent and generation.content:
-            learned_path = self.learning_store.save(
+            learning_record = self.learning_store.save(
                 query=query,
                 result=result,
                 client_response=generation.content,
                 tenant_id=learning_options.tenant_id,
                 approved=learning_options.approve_learning,
+                approved_by=learning_options.approved_by,
             )
-            result.learned_context_path = str(learned_path)
+            result.learned_context_path = learning_record.location
+            result.data["learning"] = {
+                "learning_id": learning_record.learning_id,
+                "status": learning_record.status,
+                "storage_location": learning_record.location,
+                "indexing_status": learning_record.indexing_status,
+                "qdrant_collection": learning_record.qdrant_collection,
+            }
             if learning_options.approve_learning:
                 self.rag.refresh()
 

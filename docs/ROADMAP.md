@@ -59,7 +59,7 @@ Status: Partially complete.
 Current branch includes:
 
 - OpenAI provider integration through `LLM_PROVIDER=openai`.
-- Shared configurable response model through `OPENAI_MODEL`, currently `gpt-4.1-mini`.
+- Shared configurable response model through `OPENAI_MODEL`, currently `gpt-5.5`.
 - Human-readable `text/plain` analysis responses.
 - Provider/model response headers.
 - Controlled RAG learning with consent and approval gates.

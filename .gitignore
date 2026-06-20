@@ -14,3 +14,8 @@ data/knowledge/learning_audit.jsonl
 !data/outputs/.gitkeep
 !data/audit/.gitkeep
 !data/knowledge/learned/.gitkeep
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

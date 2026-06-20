@@ -1,4 +1,5 @@
 import base64
+import json
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -9,9 +10,10 @@ from app.main import app
 client = TestClient(app)
 
 
-def basic_auth(username: str, password: str) -> dict[str, str]:
-    token = base64.b64encode(f"{username}:{password}".encode()).decode()
-    return {"Authorization": f"Basic {token}"}
+def _artifact_manifest(response) -> list[dict[str, str]]:
+    encoded = response.headers["x-generated-artifacts"]
+    encoded += "=" * ((4 - len(encoded) % 4) % 4)
+    return json.loads(base64.urlsafe_b64decode(encoded).decode("utf-8"))
 
 
 def test_health_endpoint() -> None:
@@ -21,20 +23,43 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_auth_enabled_requires_basic_credentials() -> None:
+def test_auth_enabled_requires_otp_session_for_api() -> None:
     from app.core.config import settings
 
-    previous = (settings.auth_enabled, settings.auth_username, settings.auth_password)
+    auth_client = TestClient(app)
+    previous = (settings.auth_enabled, settings.otp_dev_mode)
     settings.auth_enabled = True
-    settings.auth_username = "demo"
-    settings.auth_password = "secret"
+    settings.otp_dev_mode = True
     try:
-        unauthenticated = client.get("/")
-        authenticated = client.get("/", headers=basic_auth("demo", "secret"))
+        unauthenticated = auth_client.post(
+            "/api/v1/tasks/analyze-text",
+            json={
+                "query": "Analyze bank statement",
+                "text": "2026-04-03 Cash Deposit 0 150000 400000",
+            },
+        )
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "client@example.com"},
+        )
+        otp = otp_response.json()["dev_otp"]
+        login = auth_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "client@example.com", "otp": otp},
+        )
+        authenticated = auth_client.post(
+            "/api/v1/tasks/analyze-text",
+            json={
+                "query": "Analyze bank statement",
+                "text": "2026-04-03 Cash Deposit 0 150000 400000",
+            },
+        )
     finally:
-        settings.auth_enabled, settings.auth_username, settings.auth_password = previous
+        settings.auth_enabled, settings.otp_dev_mode = previous
 
     assert unauthenticated.status_code == 401
+    assert login.status_code == 200
+    assert login.json()["email"] == "client@example.com"
     assert authenticated.status_code == 200
 
 
@@ -50,20 +75,23 @@ def test_web_app_serves_chat_interface() -> None:
 def test_approved_learning_requires_reviewer_role() -> None:
     from app.core.config import settings
 
-    previous = (
-        settings.auth_enabled,
-        settings.auth_username,
-        settings.auth_password,
-        settings.auth_default_role,
-    )
+    auth_client = TestClient(app)
+    previous = (settings.auth_enabled, settings.otp_dev_mode, settings.auth_default_role)
     settings.auth_enabled = True
-    settings.auth_username = "preparer"
-    settings.auth_password = "secret"
+    settings.otp_dev_mode = True
     settings.auth_default_role = "preparer"
     try:
-        response = client.post(
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "preparer@example.com"},
+        )
+        otp = otp_response.json()["dev_otp"]
+        login = auth_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "preparer@example.com", "otp": otp},
+        )
+        response = auth_client.post(
             "/api/v1/tasks/analyze-text",
-            headers=basic_auth("preparer", "secret"),
             json={
                 "query": "Analyze bank statement",
                 "text": "2026-04-03 Cash Deposit 0 150000 400000",
@@ -72,13 +100,9 @@ def test_approved_learning_requires_reviewer_role() -> None:
             },
         )
     finally:
-        (
-            settings.auth_enabled,
-            settings.auth_username,
-            settings.auth_password,
-            settings.auth_default_role,
-        ) = previous
+        settings.auth_enabled, settings.otp_dev_mode, settings.auth_default_role = previous
 
+    assert login.status_code == 200
     assert response.status_code == 403
 
 
@@ -120,6 +144,76 @@ def test_analyze_text_accepts_list_of_lines() -> None:
     assert "Analysis Report" in response.text
     assert "Key Observations" in response.text
     assert "bank_statement" in response.text
+
+
+def test_analyze_text_generates_downloadable_response_documents() -> None:
+    response = client.post(
+        "/api/v1/tasks/analyze-text",
+        json={
+            "query": "Analyze this notice and provide all formats",
+            "text": "Show Cause Notice under section 73 of the CGST Act.",
+            "output_formats": ["pdf", "docx", "xlsx"],
+        },
+    )
+
+    assert response.status_code == 200
+    manifest = _artifact_manifest(response)
+    assert {artifact["format"] for artifact in manifest} == {"pdf", "docx", "xlsx"}
+
+    expected_signatures = {
+        "pdf": b"%PDF",
+        "docx": b"PK",
+        "xlsx": b"PK",
+    }
+    for artifact in manifest:
+        download = client.get(artifact["url"])
+        assert download.status_code == 200
+        assert download.content.startswith(expected_signatures[artifact["format"]])
+        assert "attachment" in download.headers["content-disposition"]
+
+
+def test_generated_artifact_download_is_tenant_isolated() -> None:
+    from app.core.config import settings
+
+    previous = (settings.auth_enabled, settings.otp_dev_mode)
+    settings.auth_enabled = True
+    settings.otp_dev_mode = True
+    owner_client = TestClient(app)
+    other_client = TestClient(app)
+    try:
+        owner_otp = owner_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "artifact-owner@example.com"},
+        ).json()["dev_otp"]
+        owner_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "artifact-owner@example.com", "otp": owner_otp},
+        )
+        response = owner_client.post(
+            "/api/v1/tasks/analyze-text",
+            json={
+                "query": "Analyze this notice and provide a PDF",
+                "text": "Show Cause Notice under section 73 of the CGST Act.",
+            },
+        )
+        artifact_url = _artifact_manifest(response)[0]["url"]
+
+        other_otp = other_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "another-client@example.com"},
+        ).json()["dev_otp"]
+        other_client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": "another-client@example.com", "otp": other_otp},
+        )
+
+        owner_download = owner_client.get(artifact_url)
+        blocked_download = other_client.get(artifact_url)
+    finally:
+        settings.auth_enabled, settings.otp_dev_mode = previous
+
+    assert owner_download.status_code == 200
+    assert blocked_download.status_code == 404
 
 
 def test_invalid_multiline_json_returns_helpful_message() -> None:
