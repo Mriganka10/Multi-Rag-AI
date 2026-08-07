@@ -60,35 +60,65 @@
             <button type="button" class="link-button" id="changeEmailButton">Use a different email</button>
           </form>
 
-          <button type="button" class="link-button signup-link" id="openSignupDialog">
+          <a class="link-button signup-link" href="/register">
             New user? Verify your email first
-          </button>
+          </a>
           <div class="auth-status" id="authStatus" aria-live="polite"></div>
         </section>
       </main>
 
-      <dialog class="signup-dialog" id="signupDialog">
-        <form class="signup-dialog-card" id="signupForm">
-          <div class="dialog-header">
+      <main class="auth-screen register-screen" id="registerScreen" hidden>
+        <section class="auth-brand-panel" aria-label="Signup overview">
+          <div class="brand-lockup">
+            <div class="brand-mark">CA</div>
             <div>
-              <p class="eyebrow">First-time verification</p>
-              <h2>New user? Verify your email first</h2>
+              <p class="eyebrow">Secure CA Intelligence Workspace</p>
+              <h1>CA Agentic AI RAG</h1>
             </div>
-            <button type="button" class="dialog-close" id="closeSignupDialog" aria-label="Close signup dialog">
-              &times;
-            </button>
           </div>
+          <div class="auth-copy">
+            <h2>Verify your email before requesting an OTP.</h2>
+            <p>
+              First-time client emails must complete verification before accessing a tenant-isolated
+              CA analysis workspace.
+            </p>
+          </div>
+          <div class="assurance-grid">
+            <div>
+              <span>01</span>
+              <strong>Email verified</strong>
+              <p>A verification link confirms that the mailbox belongs to the signing user.</p>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>OTP protected</strong>
+              <p>Future sign-ins use one-time passwords sent only to verified emails.</p>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Tenant safe</strong>
+              <p>Each verified email opens a fresh workspace with separate audit records.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="auth-card" aria-label="New user verification">
+          <p class="eyebrow">New user verification</p>
+          <h2>Verify your email first</h2>
           <p class="auth-hint">
             Enter your email address. We will send a verification link first. After clicking that
             link, return here and request your OTP normally.
           </p>
-          <label for="signupEmailInput">Email address</label>
-          <input id="signupEmailInput" type="email" autocomplete="email" required />
-          <button type="submit" class="primary-button full-width">Send verification link</button>
-          <button type="button" class="link-button" id="backToLoginFromSignup">Back to login</button>
+
+          <form class="auth-form" id="signupForm">
+            <label for="signupEmailInput">Email address</label>
+            <input id="signupEmailInput" type="email" autocomplete="email" required />
+            <button type="submit" class="primary-button full-width">Send verification link</button>
+          </form>
+          <a class="link-button signup-link" href="/">Back to sign in</a>
           <div class="auth-status" id="signupStatus" aria-live="polite"></div>
-        </form>
-      </dialog>
+        </section>
+      </main>
 
       <main class="workspace" id="workspace" hidden>
         <header class="workspace-header">

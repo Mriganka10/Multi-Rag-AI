@@ -1,4 +1,5 @@
 const authScreen = document.querySelector("#authScreen");
+const registerScreen = document.querySelector("#registerScreen");
 const workspace = document.querySelector("#workspace");
 const otpRequestForm = document.querySelector("#otpRequestForm");
 const otpVerifyForm = document.querySelector("#otpVerifyForm");
@@ -6,13 +7,9 @@ const emailInput = document.querySelector("#emailInput");
 const otpInput = document.querySelector("#otpInput");
 const changeEmailButton = document.querySelector("#changeEmailButton");
 const authStatus = document.querySelector("#authStatus");
-const signupDialog = document.querySelector("#signupDialog");
 const signupForm = document.querySelector("#signupForm");
 const signupEmailInput = document.querySelector("#signupEmailInput");
 const signupStatus = document.querySelector("#signupStatus");
-const openSignupDialog = document.querySelector("#openSignupDialog");
-const closeSignupDialog = document.querySelector("#closeSignupDialog");
-const backToLoginFromSignup = document.querySelector("#backToLoginFromSignup");
 const userEmail = document.querySelector("#userEmail");
 const signOutButton = document.querySelector("#signOutButton");
 
@@ -31,6 +28,7 @@ const approveLearning = document.querySelector("#approveLearning");
 const healthStatus = document.querySelector("#healthStatus");
 
 let pendingEmail = "";
+const isRegisterRoute = window.location.pathname === "/register";
 
 function setHealth(status, text) {
   healthStatus.className = `status-pill ${status}`;
@@ -62,6 +60,7 @@ function setSignupStatus(text, state = "") {
 function renderFreshWorkspace(user) {
   userEmail.textContent = user.email;
   authScreen.hidden = true;
+  registerScreen.hidden = true;
   workspace.hidden = false;
   promptInput.value = "";
   fileInput.value = "";
@@ -79,6 +78,7 @@ function renderFreshWorkspace(user) {
 
 function showSignIn() {
   workspace.hidden = true;
+  registerScreen.hidden = true;
   authScreen.hidden = false;
   otpRequestForm.hidden = false;
   otpVerifyForm.hidden = true;
@@ -87,24 +87,36 @@ function showSignIn() {
   emailInput.focus();
 }
 
-function showSignupDialog() {
-  signupEmailInput.value = emailInput.value.trim().toLowerCase();
-  setSignupStatus("");
-  if (!signupDialog.open) {
-    signupDialog.showModal();
-  }
+function showRegisterPage() {
+  workspace.hidden = true;
+  authScreen.hidden = true;
+  registerScreen.hidden = false;
+  const params = new URLSearchParams(window.location.search);
+  signupEmailInput.value = (params.get("email") || "").trim().toLowerCase();
+  setSignupStatus(
+    params.get("reason") === "unverified"
+      ? "This email needs verification before OTP login. Send the verification link below."
+      : "",
+    params.get("reason") === "unverified" ? "error" : "",
+  );
   signupEmailInput.focus();
 }
 
-function hideSignupDialog() {
-  if (signupDialog.open) {
-    signupDialog.close();
+function navigateToRegister(email) {
+  const params = new URLSearchParams();
+  if (email) {
+    params.set("email", email);
   }
-  setSignupStatus("");
-  emailInput.focus();
+  params.set("reason", "unverified");
+  window.location.href = `/register?${params.toString()}`;
 }
 
 async function loadSession() {
+  if (isRegisterRoute) {
+    showRegisterPage();
+    return;
+  }
+
   try {
     const response = await fetch("/api/v1/auth/me");
     if (!response.ok) {
@@ -137,9 +149,7 @@ async function requestOtp(event) {
     const message = payload.detail || "Unable to send OTP.";
     setAuthStatus(message, "error");
     if (response.status === 403) {
-      signupEmailInput.value = email;
-      showSignupDialog();
-      setSignupStatus(message, "error");
+      navigateToRegister(email);
     }
     return;
   }
@@ -149,7 +159,10 @@ async function requestOtp(event) {
   otpVerifyForm.hidden = false;
   otpInput.focus();
   const devOtp = payload.dev_otp ? ` Development OTP: ${payload.dev_otp}` : "";
-  setAuthStatus(`OTP sent to ${email}.${devOtp}`, "success");
+  setAuthStatus(
+    `OTP accepted for delivery to ${email}.${devOtp} Check your inbox and spam folder.`,
+    "success",
+  );
 }
 
 async function requestSignupVerification(event) {
@@ -175,12 +188,6 @@ async function requestSignupVerification(event) {
   emailInput.value = email;
   const status = payload.status === "verified" ? "success" : "info";
   setSignupStatus(payload.message || "Verification link sent. Check your email.", status);
-  setAuthStatus(
-    payload.status === "verified"
-      ? "Email verified. You can request OTP now."
-      : "Verification link sent. After clicking it, request OTP here.",
-    status,
-  );
 }
 
 async function verifyOtp(event) {
@@ -414,14 +421,6 @@ async function handleSubmit(event) {
 otpRequestForm.addEventListener("submit", requestOtp);
 otpVerifyForm.addEventListener("submit", verifyOtp);
 signupForm.addEventListener("submit", requestSignupVerification);
-openSignupDialog.addEventListener("click", showSignupDialog);
-closeSignupDialog.addEventListener("click", hideSignupDialog);
-backToLoginFromSignup.addEventListener("click", hideSignupDialog);
-signupDialog.addEventListener("click", (event) => {
-  if (event.target === signupDialog) {
-    hideSignupDialog();
-  }
-});
 changeEmailButton.addEventListener("click", () => {
   pendingEmail = "";
   otpVerifyForm.hidden = true;

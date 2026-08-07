@@ -134,7 +134,7 @@ class AuthService:
             raise HTTPException(
                 status_code=403,
                 detail=(
-                    "This email is not verified yet. Click New user signup, complete the "
+                    "This email is not verified yet. Open /register, complete the email "
                     "verification link, then request OTP."
                 ),
             )

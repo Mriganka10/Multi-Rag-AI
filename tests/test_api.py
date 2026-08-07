@@ -168,7 +168,18 @@ def test_web_app_serves_chat_interface() -> None:
     assert response.headers["content-type"].startswith("text/html")
     assert "CA Agentic AI RAG" in response.text
     assert "Attach file" in response.text
+    assert 'href="/register"' in response.text
     assert "New user? Verify your email first" in response.text
+
+
+def test_register_page_serves_signup_interface() -> None:
+    response = client.get("/register")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert 'id="registerScreen"' in response.text
+    assert "Send verification link" in response.text
+    assert "Back to sign in" in response.text
 
 
 def test_approved_learning_requires_reviewer_role() -> None:

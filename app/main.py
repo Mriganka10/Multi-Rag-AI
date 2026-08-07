@@ -30,6 +30,16 @@ def web_app_head() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/register", include_in_schema=False)
+def register_app() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.head("/register", include_in_schema=False)
+def register_app_head() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request,
