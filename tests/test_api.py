@@ -168,7 +168,7 @@ def test_web_app_serves_chat_interface() -> None:
     assert response.headers["content-type"].startswith("text/html")
     assert "CA Agentic AI RAG" in response.text
     assert "Attach file" in response.text
-    assert "New user signup" in response.text
+    assert "New user? Verify your email first" in response.text
 
 
 def test_approved_learning_requires_reviewer_role() -> None:
