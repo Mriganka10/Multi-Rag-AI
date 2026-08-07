@@ -32,12 +32,12 @@ def web_app_head() -> FileResponse:
 
 @app.get("/register", include_in_schema=False)
 def register_app() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "register.html")
 
 
 @app.head("/register", include_in_schema=False)
 def register_app_head() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "register.html")
 
 
 @app.exception_handler(RequestValidationError)

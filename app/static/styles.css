@@ -241,6 +241,17 @@ button {
   color: var(--muted);
 }
 
+.verification-note {
+  border: 1px solid #ead7a5;
+  border-radius: 8px;
+  margin-top: 18px;
+  padding: 12px;
+  color: #596965;
+  background: #fff9ec;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .signup-link {
   width: 100%;
   margin-top: 14px;

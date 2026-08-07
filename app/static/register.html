@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verify Email | CA Agentic AI RAG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="auth-screen register-screen">
+        <section class="auth-brand-panel" aria-label="Signup overview">
+          <div class="brand-lockup">
+            <div class="brand-mark">CA</div>
+            <div>
+              <p class="eyebrow">First-time verification</p>
+              <h1>CA Agentic AI RAG</h1>
+            </div>
+          </div>
+          <div class="auth-copy">
+            <h2>Verify Your Email</h2>
+            <p>
+              New users must verify their email once through AWS SES. After verification, return to
+              login and request your OTP normally.
+            </p>
+          </div>
+          <div class="assurance-grid">
+            <div>
+              <span>01</span>
+              <strong>Email approved</strong>
+              <p>The verification link confirms OTP delivery is allowed for this mailbox.</p>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>Secure sign in</strong>
+              <p>Future access is protected by short-lived one-time passwords.</p>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Private workspace</strong>
+              <p>Every verified email receives a fresh CA workspace and separate audit trail.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="auth-card" aria-label="New user registration">
+          <p class="eyebrow">New user registration</p>
+          <h2>Verify your email first</h2>
+          <p class="auth-hint">
+            Enter your email address. AWS will send a verification email with a link to approve
+            this address for OTP delivery.
+          </p>
+
+          <form id="signupForm" class="auth-form">
+            <label for="signupEmailInput">Email</label>
+            <input id="signupEmailInput" type="email" autocomplete="email" required />
+            <button type="submit" class="primary-button full-width">Send Verification Link</button>
+          </form>
+
+          <div class="verification-note">
+            After clicking the AWS verification link, come back to the login page and request your
+            one-time password.
+          </div>
+
+          <a class="link-button signup-link" href="/">Back to Login</a>
+          <div class="auth-status" id="signupStatus" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/static/register.js"></script>
+  </body>
+</html>

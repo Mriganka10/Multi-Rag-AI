@@ -177,9 +177,10 @@ def test_register_page_serves_signup_interface() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert 'id="registerScreen"' in response.text
-    assert "Send verification link" in response.text
-    assert "Back to sign in" in response.text
+    assert "<title>Verify Email | CA Agentic AI RAG</title>" in response.text
+    assert "Send Verification Link" in response.text
+    assert "Back to Login" in response.text
+    assert "Send OTP" not in response.text
 
 
 def test_approved_learning_requires_reviewer_role() -> None:
