@@ -60,9 +60,35 @@
             <button type="button" class="link-button" id="changeEmailButton">Use a different email</button>
           </form>
 
+          <button type="button" class="link-button signup-link" id="openSignupDialog">
+            New user signup
+          </button>
           <div class="auth-status" id="authStatus" aria-live="polite"></div>
         </section>
       </main>
+
+      <dialog class="signup-dialog" id="signupDialog">
+        <form class="signup-dialog-card" id="signupForm">
+          <div class="dialog-header">
+            <div>
+              <p class="eyebrow">First-time verification</p>
+              <h2>New user signup</h2>
+            </div>
+            <button type="button" class="dialog-close" id="closeSignupDialog" aria-label="Close signup dialog">
+              &times;
+            </button>
+          </div>
+          <p class="auth-hint">
+            Enter your email address. We will send a verification link first. After clicking that
+            link, return here and request your OTP normally.
+          </p>
+          <label for="signupEmailInput">Email address</label>
+          <input id="signupEmailInput" type="email" autocomplete="email" required />
+          <button type="submit" class="primary-button full-width">Send verification link</button>
+          <button type="button" class="link-button" id="backToLoginFromSignup">Back to login</button>
+          <div class="auth-status" id="signupStatus" aria-live="polite"></div>
+        </form>
+      </dialog>
 
       <main class="workspace" id="workspace" hidden>
         <header class="workspace-header">

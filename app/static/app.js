@@ -6,6 +6,13 @@ const emailInput = document.querySelector("#emailInput");
 const otpInput = document.querySelector("#otpInput");
 const changeEmailButton = document.querySelector("#changeEmailButton");
 const authStatus = document.querySelector("#authStatus");
+const signupDialog = document.querySelector("#signupDialog");
+const signupForm = document.querySelector("#signupForm");
+const signupEmailInput = document.querySelector("#signupEmailInput");
+const signupStatus = document.querySelector("#signupStatus");
+const openSignupDialog = document.querySelector("#openSignupDialog");
+const closeSignupDialog = document.querySelector("#closeSignupDialog");
+const backToLoginFromSignup = document.querySelector("#backToLoginFromSignup");
 const userEmail = document.querySelector("#userEmail");
 const signOutButton = document.querySelector("#signOutButton");
 
@@ -47,6 +54,11 @@ function setAuthStatus(text, state = "") {
   authStatus.className = `auth-status ${state}`.trim();
 }
 
+function setSignupStatus(text, state = "") {
+  signupStatus.textContent = text;
+  signupStatus.className = `auth-status ${state}`.trim();
+}
+
 function renderFreshWorkspace(user) {
   userEmail.textContent = user.email;
   authScreen.hidden = true;
@@ -72,6 +84,23 @@ function showSignIn() {
   otpVerifyForm.hidden = true;
   otpInput.value = "";
   setAuthStatus("");
+  emailInput.focus();
+}
+
+function showSignupDialog() {
+  signupEmailInput.value = emailInput.value.trim().toLowerCase();
+  setSignupStatus("");
+  if (!signupDialog.open) {
+    signupDialog.showModal();
+  }
+  signupEmailInput.focus();
+}
+
+function hideSignupDialog() {
+  if (signupDialog.open) {
+    signupDialog.close();
+  }
+  setSignupStatus("");
   emailInput.focus();
 }
 
@@ -105,7 +134,13 @@ async function requestOtp(event) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    setAuthStatus(payload.detail || "Unable to send OTP.", "error");
+    const message = payload.detail || "Unable to send OTP.";
+    setAuthStatus(message, "error");
+    if (response.status === 403) {
+      signupEmailInput.value = email;
+      showSignupDialog();
+      setSignupStatus(message, "error");
+    }
     return;
   }
 
@@ -115,6 +150,37 @@ async function requestOtp(event) {
   otpInput.focus();
   const devOtp = payload.dev_otp ? ` Development OTP: ${payload.dev_otp}` : "";
   setAuthStatus(`OTP sent to ${email}.${devOtp}`, "success");
+}
+
+async function requestSignupVerification(event) {
+  event.preventDefault();
+  const email = signupEmailInput.value.trim().toLowerCase();
+  if (!email) {
+    signupEmailInput.focus();
+    return;
+  }
+
+  setSignupStatus("Sending verification link...", "info");
+  const response = await fetch("/api/v1/auth/register-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    setSignupStatus(payload.detail || "Unable to send verification link.", "error");
+    return;
+  }
+
+  emailInput.value = email;
+  const status = payload.status === "verified" ? "success" : "info";
+  setSignupStatus(payload.message || "Verification link sent. Check your email.", status);
+  setAuthStatus(
+    payload.status === "verified"
+      ? "Email verified. You can request OTP now."
+      : "Verification link sent. After clicking it, request OTP here.",
+    status,
+  );
 }
 
 async function verifyOtp(event) {
@@ -347,6 +413,15 @@ async function handleSubmit(event) {
 
 otpRequestForm.addEventListener("submit", requestOtp);
 otpVerifyForm.addEventListener("submit", verifyOtp);
+signupForm.addEventListener("submit", requestSignupVerification);
+openSignupDialog.addEventListener("click", showSignupDialog);
+closeSignupDialog.addEventListener("click", hideSignupDialog);
+backToLoginFromSignup.addEventListener("click", hideSignupDialog);
+signupDialog.addEventListener("click", (event) => {
+  if (event.target === signupDialog) {
+    hideSignupDialog();
+  }
+});
 changeEmailButton.addEventListener("click", () => {
   pendingEmail = "";
   otpVerifyForm.hidden = true;

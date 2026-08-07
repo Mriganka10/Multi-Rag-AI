@@ -25,9 +25,13 @@ class Settings(BaseSettings):
     auth_session_ttl_minutes: int = 720
     auth_cookie_secure: bool = False
     auth_default_role: str = "admin"
+    auth_require_email_verification: bool = False
     otp_ttl_minutes: int = 10
     otp_dev_mode: bool = False
     otp_email_from: str = "no-reply@ca-agentic-ai.local"
+    email_provider: str = "smtp"
+    ses_region: str | None = None
+    ses_from_email: str | None = None
     smtp_host: str | None = None
     smtp_port: int = 587
     smtp_username: str | None = None

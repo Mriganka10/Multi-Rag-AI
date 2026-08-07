@@ -36,6 +36,19 @@ def request_otp(payload: OTPRequest) -> dict[str, object]:
     return result
 
 
+@router.post("/auth/register-email")
+def register_email(payload: OTPRequest) -> dict[str, object]:
+    result = auth_service.request_signup_verification(payload.email)
+    audit_logger.log(
+        event_type="auth_email_verification_requested",
+        tenant_id=safe_tenant_id(payload.email),
+        actor=payload.email,
+        status="success",
+        metadata={"email": payload.email, "verification_status": result.get("status")},
+    )
+    return result
+
+
 @router.post("/auth/verify-otp")
 def verify_otp(payload: OTPVerifyRequest, response: Response) -> dict[str, object]:
     user, session_token = auth_service.verify_otp(payload.email, payload.otp)

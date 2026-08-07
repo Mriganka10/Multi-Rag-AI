@@ -63,6 +63,104 @@ def test_auth_enabled_requires_otp_session_for_api() -> None:
     assert authenticated.status_code == 200
 
 
+def test_signup_verification_required_before_otp() -> None:
+    from app.core.config import settings
+
+    auth_client = TestClient(app)
+    previous = (
+        settings.auth_enabled,
+        settings.otp_dev_mode,
+        settings.auth_require_email_verification,
+        settings.email_provider,
+    )
+    settings.auth_enabled = True
+    settings.otp_dev_mode = True
+    settings.auth_require_email_verification = True
+    settings.email_provider = "smtp"
+    try:
+        blocked = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "new-client@example.com"},
+        )
+        signup = auth_client.post(
+            "/api/v1/auth/register-email",
+            json={"email": "new-client@example.com"},
+        )
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "new-client@example.com"},
+        )
+    finally:
+        (
+            settings.auth_enabled,
+            settings.otp_dev_mode,
+            settings.auth_require_email_verification,
+            settings.email_provider,
+        ) = previous
+
+    assert blocked.status_code == 403
+    assert signup.status_code == 200
+    assert signup.json()["status"] == "verified"
+    assert otp_response.status_code == 200
+    assert otp_response.json()["dev_otp"]
+
+
+def test_ses_signup_requests_verification_link(monkeypatch) -> None:
+    from app.api.routes import auth_service
+    from app.core.config import settings
+
+    class FakeSES:
+        def __init__(self) -> None:
+            self.verified = False
+
+        def get_email_identity(self, EmailIdentity):
+            return {"VerificationStatus": "SUCCESS" if self.verified else "PENDING"}
+
+        def create_email_identity(self, EmailIdentity):
+            self.verified = False
+            return {}
+
+    fake_ses = FakeSES()
+    monkeypatch.setattr(auth_service, "_ses_client", lambda: fake_ses)
+    previous = (
+        settings.auth_enabled,
+        settings.otp_dev_mode,
+        settings.auth_require_email_verification,
+        settings.email_provider,
+    )
+    settings.auth_enabled = True
+    settings.otp_dev_mode = True
+    settings.auth_require_email_verification = True
+    settings.email_provider = "ses"
+    try:
+        auth_client = TestClient(app)
+        signup = auth_client.post(
+            "/api/v1/auth/register-email",
+            json={"email": "ses-client@example.com"},
+        )
+        blocked = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "ses-client@example.com"},
+        )
+        fake_ses.verified = True
+        otp_response = auth_client.post(
+            "/api/v1/auth/request-otp",
+            json={"email": "ses-client@example.com"},
+        )
+    finally:
+        (
+            settings.auth_enabled,
+            settings.otp_dev_mode,
+            settings.auth_require_email_verification,
+            settings.email_provider,
+        ) = previous
+
+    assert signup.status_code == 200
+    assert signup.json()["status"] == "pending"
+    assert blocked.status_code == 403
+    assert otp_response.status_code == 200
+
+
 def test_web_app_serves_chat_interface() -> None:
     response = client.get("/")
 
@@ -70,6 +168,7 @@ def test_web_app_serves_chat_interface() -> None:
     assert response.headers["content-type"].startswith("text/html")
     assert "CA Agentic AI RAG" in response.text
     assert "Attach file" in response.text
+    assert "New user signup" in response.text
 
 
 def test_approved_learning_requires_reviewer_role() -> None:
