@@ -82,8 +82,15 @@ class AuthService:
                 "message": "Email is verified. You can return to login and request an OTP.",
             }
 
+        client = self._ses_client()
+        if current_status in {"PENDING", "TEMPORARY_FAILURE", "FAILED"}:
+            try:
+                client.delete_email_identity(EmailIdentity=normalized_email)
+            except Exception:
+                pass
+
         try:
-            self._ses_client().create_email_identity(EmailIdentity=normalized_email)
+            client.create_email_identity(EmailIdentity=normalized_email)
             self._save_email_verification(
                 normalized_email,
                 "PENDING",
@@ -104,7 +111,7 @@ class AuthService:
                     "status": "pending",
                     "email": normalized_email,
                     "message": (
-                        "Verification email was already requested. Open the AWS email and click "
+                        "Verification email has been requested. Open the AWS email and click "
                         "the verification link, then return to login and request OTP."
                     ),
                 }

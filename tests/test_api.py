@@ -112,12 +112,19 @@ def test_ses_signup_requests_verification_link(monkeypatch) -> None:
     class FakeSES:
         def __init__(self) -> None:
             self.verified = False
+            self.created = 0
+            self.deleted = 0
 
         def get_email_identity(self, EmailIdentity):
             return {"VerificationStatus": "SUCCESS" if self.verified else "PENDING"}
 
         def create_email_identity(self, EmailIdentity):
+            self.created += 1
             self.verified = False
+            return {}
+
+        def delete_email_identity(self, EmailIdentity):
+            self.deleted += 1
             return {}
 
     fake_ses = FakeSES()
@@ -157,6 +164,8 @@ def test_ses_signup_requests_verification_link(monkeypatch) -> None:
 
     assert signup.status_code == 200
     assert signup.json()["status"] == "pending"
+    assert fake_ses.deleted == 1
+    assert fake_ses.created == 1
     assert blocked.status_code == 403
     assert otp_response.status_code == 200
 
