@@ -73,8 +73,8 @@ The current implementation writes audit events to PostgreSQL when `DATABASE_URL`
 In the AWS demo, audit records are stored in Amazon RDS PostgreSQL:
 
 ```text
-DB identifier: ca-agentic-ai-audit-db
-Database name: ca_agentic_ai
+DB identifier: kairoz-production-postgres
+Database: the Multi-RAG logical database, accessed only through its application role
 Region: ap-south-1
 ```
 

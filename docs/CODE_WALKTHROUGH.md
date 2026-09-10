@@ -21,4 +21,6 @@ The repository's business functions, human-review policy, APIs, and RAG behavior
 
 ## Verification
 
-Run `ruff check .` and `pytest`. The release passed 27 tests, followed by production health and end-to-end smoke checks.
+Run `pytest` and `ruff check .`. On 10 September 2026, all 27 tests passed. The repository-wide
+Ruff audit still reports 19 pre-existing style, exception-handling, and import-order findings;
+resolve those through a reviewed code-quality change rather than an infrastructure release.

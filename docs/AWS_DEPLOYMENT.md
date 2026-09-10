@@ -16,4 +16,7 @@ Build an immutable ARM-compatible image, register a new task-definition revision
 
 Rollback uses the preceding task definition. The former Elastic Beanstalk environment is paused for the agreed 7–14 day rollback observation window and is not active production.
 
+The former Multi-RAG RDS instance still exists during that window and continues to incur charges.
+Snapshot and retire it only after final data/restore validation and explicit owner approval.
+
 See [deployment walkthrough](AWS_DEPLOYMENT_WALKTHROUGH.md) and [code walkthrough](CODE_WALKTHROUGH.md).
