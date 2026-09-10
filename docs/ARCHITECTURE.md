@@ -35,42 +35,39 @@ Human-readable client response
 
 ## Deployed AWS Architecture
 
-The public demo is deployed on AWS Elastic Beanstalk in `ap-south-1`.
+The public application is deployed on ECS in `ap-south-1` and retains `https://ledgermind.co.in`.
 
 ```text
 Client Browser
         |
         v
-Elastic Beanstalk public URL
+CloudFront (HTTPS and existing domain)
         |
         v
-Elastic Beanstalk environment: ca-agentic-ai-prod
+Shared ALB with private application-routing header
         |
         v
-EC2 instance: i-0c35f5212d41a1752
-        |
-        v
-Docker container running FastAPI
+Isolated Multi-RAG ECS web service
         |
         +-- Amazon S3: uploaded client files
-        +-- Amazon RDS PostgreSQL: audit events
+        +-- Shared Amazon RDS: dedicated logical database and role
         +-- OpenAI API: final response generation
 ```
 
-Elastic Beanstalk is the deployment manager. It provisions and manages the EC2 server, deploys the Docker application bundle, monitors health, and exposes the public URL.
-
-EC2 is the actual virtual server where the container runs. In this project, the EC2 instance should normally be treated as a managed part of Elastic Beanstalk. Direct EC2 actions, such as rebooting the instance, are used only for operational fixes like refreshing the SSM agent after IAM role changes.
+The application shares only the ALB, ECS capacity, and physical RDS instance. Its ECS service,
+target group, task role, secrets, database/role, and S3 namespace remain isolated. The legacy
+Elastic Beanstalk environment is paused only for the temporary rollback window.
 
 The deployed URL is:
 
 ```text
-http://ca-agentic-ai-prod.eba-uve6zn4c.ap-south-1.elasticbeanstalk.com/
+https://ledgermind.co.in/
 ```
 
 The health endpoint is:
 
 ```text
-http://ca-agentic-ai-prod.eba-uve6zn4c.ap-south-1.elasticbeanstalk.com/health
+https://ledgermind.co.in/health
 ```
 
 See `docs/AWS_DEPLOYMENT.md` for the deployment guide and `docs/AWS_DEPLOYMENT_WALKTHROUGH.md` for the detailed step-by-step explanation.
@@ -341,12 +338,11 @@ If `LLM_PROVIDER=openai` is set and OpenAI fails, the API returns `502 LLM provi
 
 ## Production Architecture Direction
 
-Recommended production upgrades:
+Current production already uses private S3 and PostgreSQL. Recommended product upgrades are:
 
-- Replace local file storage with S3 or equivalent object storage.
 - Replace TF-IDF retrieval with Qdrant vector search.
 - Add OpenAI embeddings and reranking.
-- Add PostgreSQL for clients, jobs, document metadata, review status, and audit trail.
+- Expand the PostgreSQL model for clients, jobs, document metadata, and review status.
 - Add background workers for large document processing.
 - Add human approval workflow before any tax filing or notice submission.
 

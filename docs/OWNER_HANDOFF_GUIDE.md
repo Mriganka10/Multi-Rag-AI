@@ -178,8 +178,8 @@ File: `docs/AWS_DEPLOYMENT.md`
 
 Purpose:
 
-- Shows the actual AWS deployment path used for the public demo.
-- Explains the deployed Elastic Beanstalk, EC2, S3, RDS, IAM, and Session Manager setup.
+- Shows the current CloudFront, ALB, ECS, S3, RDS, and IAM production path.
+- Explains shared infrastructure versus application-level isolation.
 - Gives the public URL, health URL, and operational verification steps.
 
 Use this document when checking or repeating the cloud deployment.
@@ -191,11 +191,20 @@ File: `docs/AWS_DEPLOYMENT_WALKTHROUGH.md`
 Purpose:
 
 - Explains the deployment journey in beginner-friendly language.
-- Clarifies the difference between EC2 and Elastic Beanstalk.
+- Explains ECS services, shared EC2 capacity, task roles, target groups, and rollback.
 - Explains IAM, roles, policies, security groups, S3 lifecycle rules, RDS PostgreSQL, and server rebooting.
 - Records the issues faced during deployment and how they were fixed.
 
 Use this document to understand why each AWS step was done.
+
+### Step 8C: Code Walkthrough
+
+File: `docs/CODE_WALKTHROUGH.md`
+
+Purpose:
+
+- Maps each request from FastAPI through orchestration, RAG, LLM, storage, and audit.
+- Records that the September 2026 change was infrastructure-only for this application.
 
 ### Step 9: Roadmap
 

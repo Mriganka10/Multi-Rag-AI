@@ -38,7 +38,7 @@ Production systems must treat all uploaded data as confidential.
 ### Authentication and Authorization
 
 - Enable email OTP sign-in for the AWS demo using `AUTH_ENABLED=true`.
-- Configure SMTP or Amazon SES SMTP credentials through AWS-managed secrets or protected Elastic Beanstalk environment properties.
+- Configure email credentials through AWS-managed secrets exposed only to the ECS task role.
 - Set `AUTH_COOKIE_SECURE=true` in public HTTPS deployments.
 - For a broader production rollout, prefer SES-backed OTP, Cognito, or enterprise SSO with managed user lifecycle controls.
 - Use role checks for sensitive workflows such as CA-approved RAG learning.
@@ -78,7 +78,9 @@ Database name: ca_agentic_ai
 Region: ap-south-1
 ```
 
-The RDS console Query Editor does not work for this normal RDS PostgreSQL instance because that console feature is mainly for Aurora Serverless/Data API databases. To inspect records, connect to the Elastic Beanstalk EC2 instance using AWS Systems Manager Session Manager, then run `psql` from inside the AWS network.
+Inspect the private RDS database only from an approved administrative ECS task or bastion in the
+VPC. Use the application database role, audit the session, and do not print decrypted connection
+strings into logs.
 
 Useful query:
 

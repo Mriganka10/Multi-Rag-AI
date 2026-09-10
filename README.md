@@ -15,6 +15,7 @@ The design keeps ITR automation and production-grade government integrations beh
 - [Owner Handoff Guide](docs/OWNER_HANDOFF_GUIDE.md)
 - [Project Brief](docs/PROJECT_BRIEF.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Code Walkthrough](docs/CODE_WALKTHROUGH.md)
 - [Setup Guide](docs/SETUP.md)
 - [API Reference](docs/API.md)
 - [Agent Workflows](docs/AGENTS.md)
@@ -43,6 +44,10 @@ Agent Orchestrator
    |
 OpenAI LLM Response Layer
 ```
+
+Production keeps `https://ledgermind.co.in` and runs this container as an isolated ECS web service
+behind CloudFront and the shared ALB. It has its own target group, task role, secrets, logical
+PostgreSQL database/role, and S3 namespace; no application worker is currently required.
 
 ## Quick Start
 
